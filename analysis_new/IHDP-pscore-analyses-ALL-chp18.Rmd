@@ -1,0 +1,466 @@
+---
+title: IHDP analyses for Ch 19 of GHV book
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+### This code will walk through the IHDP analyses in Chapter 19 starting with section 19.5
+
+### Read in relevant functions (this can be removed once they are in arm)
+
+```{r}
+source("functions/new/matching.R")
+source("functions/new/balance.R")
+source("functions/new/estimation.R")
+library(dbarts)
+library(rstan)
+library(rstanarm)
+```
+
+
+### We'll start by reading in the data 
+
+Loading the data like this will create a dataframe called cc2.  It will be helpful later if we choose indicator versions of categorical variables and if we create separate indices for binary and continuous variables, so we'll create those now.
+
+```{r}
+load("cc2.Rdata")
+covs.bin <- c("bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53") 
+# above is good for balance checks but will lead to linear dependencies to avoid use this version (nr = no redundancy)
+covs.bin.nr <- c("bwg","hispanic","black","b.marr","lths","hs","ltcoll","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
+#covs.cont <- c("bw","momage","preterm","age","dayskidh")   
+covs.cont <- c("bw","preterm","momage","dayskidh")   
+covs=c(covs.cont,covs.bin)
+cov.nms <- c("birth weight","weeks preterm","age at birth","days in hospital","male","first born","age","black","Hispanic","white","unmarried at birth","less than high school","high school graduate","some college","college graduate","worked during pregnancy","had no prenatal care")
+#
+covs.nr = c(covs.cont,covs.bin.nr)
+form.bal = as.formula(cc2[,c("treat",rev(covs))])
+mod.for.bal <- glm(form=form.bal,family="binomial",data=cc2)
+#[31] "income" ) # income is technically post treatment
+# st99 also problematic since only appears in the control group
+```
+
+### Figure 19.9
+The first figure in 19.5 (Figure 19.9) shows balance we will return to that after we have performed matching later.
+
+### This code is for Figure 19.10
+Figure 19.10 displays a scatter plot of birthweight versus test scores at age 3 with observations displayed in different colors.  Postscript commands have been commented out but provide an example of how to output this plot to a postscript file.  The "dev.off" command commented out at the end of the code would also be necessary if the goal is to route the plot to a file.  We exclude this code from the rest of the examples.
+
+```{r}
+# birthweight
+#postscript("ppvt.bw.ps", horizontal=T,height=3.6,width=4.2)
+par(mfrow=c(1,1))
+tmp <- lm(ppvtr.36~bw+treat,data=cc2)$coef
+plot(cc2$bw, cc2$ppvtr.36, xlab="birth weight", ylab="test score at age 3", mgp=c(2,.5,0), main="",type="n",xlim=c(1500,5000),cex.axis=.75,cex.lab=.8,lab=c(3,5,7),xaxt="n")
+axis(side=1,at=c(2000,3000,4000,5000),cex.axis=.75)
+points(cc2$bw[cc2$treat==0]+runif(sum(cc2$treat==0),-.5,5), cc2$ppvtr.36[cc2$treat==0], col="darkgrey", pch=20, cex=.3)
+points(cc2$bw[cc2$treat==1]+runif(sum(cc2$treat==1),-.5,5), cc2$ppvtr.36[cc2$treat==1], pch=20, cex=.3)
+curve(tmp[1]+tmp[2]*x,add=T,lty=2)
+curve(tmp[1]+tmp[3]+tmp[2]*x,add=T)
+#dev.off()
+
+```
+
+### Figure 19.11
+The two plots in Figure 19.11 display overlap across treatment and group groups for two covariates: mother's education and age of child.
+*** Note to self: maybe be worth dropping age of child since it's hard to explain***
+
+```{r}
+par(mfrow=c(1,2))
+#plot(x=seq(0,5,.1),y=seq(0,1800,(1800/50)),bty="n",xaxt="n",yaxt="n",mgp=c(2,.5,0),xlab="mother's education",ylab="frequency",type="n",main="")
+#axis(1, 1:4)
+#axis(2, c(0,1000,2000))
+hist(cc2$educ[cc2$treat==0],xlim=c(0,5),main="",border="darkgrey",breaks=c(.5,1.5,2.5,3.5,4.5),mgp=c(2,.5,0),xlab="mother's education",freq=FALSE)
+hist(cc2$educ[cc2$treat==1],xlim=c(0,5),xlab="education",breaks=c(.5,1.5,2.5,3.5,4.5),freq=FALSE,add=T)
+#
+hist(cc2$age[cc2$treat==0],xlim=c(0,110),main="",xlab="age of child (months)",border="darkgrey",breaks=seq(0,110,10),mgp=c(2,.5,0),ylim=c(0,.1),
+     freq=FALSE)
+hist(cc2$age[cc2$treat==1],xlim=c(0,110),xlab="",breaks=seq(0,110,10),freq=FALSE, add=T)
+```
+And two more:
+
+```{r}
+par(mfrow=c(1,2))
+#
+hist(cc2$preterm[cc2$treat==0],main="",xlab="preterm",border="darkgrey",mgp=c(2,.5,0),freq=FALSE,breaks=seq(-8,14,1))
+hist(cc2$preterm[cc2$treat==1],main="",xlab="preterm",freq=FALSE,add=TRUE)
+#
+hist(cc2$dayskidh[cc2$treat==0],main="",xlab="days in hospital", border="darkgrey",mgp=c(2,.5,0),freq=FALSE,breaks=seq(0,100,5))
+hist(cc2$dayskidh[cc2$treat==1],main="",xlab="preterm",freq=FALSE,add=TRUE)
+
+```
+These last two might be the more interesting to include in the manuscript.
+
+### Section 19.6
+Section 19.6 starts with a table presenting results from a stratified analysis of the effect of the IHDP treatment broken down by mother's education.
+
+```{r}
+#Stratified analyses
+### CODE THIS MORE EFFICIENTLY!  use aggregate function?  or just one of the apply's?
+tes.ns=matrix(0,4,4)
+tes.ns[1,]<-c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]), 
+              sum(cc2$treat==1 & cc2$lths==1), sum(cc2$lths==1), sqrt(var(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1])/sum(cc2$treat==1 & cc2$lths==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]/sum(cc2$treat==0 & cc2$lths==1))))
+tes.ns[2,]<-c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]), sum(cc2$treat==1 & cc2$hs==1), sum(cc2$hs==1), sqrt(var(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1])/sum(cc2$treat==1 & cc2$hs==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]/sum(cc2$treat==0 & cc2$hs==1))))
+tes.ns[3,]<-c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]), sum(cc2$treat==1 & cc2$ltcoll==1), sum(cc2$ltcoll==1), sqrt(var(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1])/sum(cc2$treat==1 & cc2$ltcoll==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]/sum(cc2$treat==0 & cc2$ltcoll==1))))
+tes.ns[4,]<-c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]), sum(cc2$treat==1 & cc2$college==1), sum(cc2$college==1), sqrt(var(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1])/sum(cc2$treat==1 & cc2$college==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]/sum(cc2$treat==0 & cc2$college==1))))
+
+round(tes.ns,2)
+
+```
+
+### Section 19.7 -- Initial propensity score analysis
+Given that we get the same answers from rstanarm and glm but glm runs in a much shorter period of time then I would vote for glm here.
+
+The most basic model includes all covariates without transformations or interactions.
+
+```{r}
+form0 = as.formula(cc2[,c("treat",covs)])
+# with stan
+ps_fit_0_full <- stan_glm(form0, family=binomial(link="logit"), data=cc2)
+ps_fit_0 <- stan_glm(form0, family=binomial(link="logit"), data=cc2,
+                     algorithm="optimizing")
+pscores0_full <- apply(posterior_linpred(ps_fit_0_full, type="link"), 2, mean)
+pscores0 <- apply(posterior_linpred(ps_fit_0, type="link"), 2, mean)
+cor(pscores0_full,pscores0)
+# without stan
+ps_fit_0b <- glm(form0, family=binomial(link="logit"), data=cc2)
+pscores0b <- predict(ps_fit_0b, type="link")
+#
+#cor(pscores0_full,pscores0,pscores0b)
+```
+
+### Step 3:  Use the propensity scores to match
+First we will try generating one-to-one matches without replacement. The advantage of this is that we can use the output to create a new dataset
+that maintains all the matched units.  Since every observation is used only
+once we can simply run subsequent diagnostics and analyses on this matched dataset.
+
+```{r}
+matches0 <- matching(z=cc2$treat, score=pscores0, replace=FALSE)
+matches0b <- matching(z=cc2$treat, score=pscores0b, replace=FALSE)
+```
+
+We may prefer however to use matching with replacement in an attempt to maximize the number of good matches.  This time we'll set the option replace to equal TRUE.  The output now will include a variable named "cnts" that we will use in subsequent analyses to reflect the pseudo-population that this matching procedures has created.
+
+```{r}
+matches0.wr <- matching(z=cc2$treat, score=pscores0, replace=TRUE)
+matches0b.wr <- matching(z=cc2$treat, score=pscores0b, replace=TRUE)
+```
+
+### Step 4:  Checking Balance and overlap
+
+## Step 4a:  Checking Balance 
+Lets check balance and overlap on the matched data.  One option is the plot in Figure XXX.  [THIS SHOULD USE THE MATCHED DATA FROM THE PREFERRED MODEL THAT WE DETERMINE LATER]  That can be produced using the following code:
+
+```{r}
+par(mfrow=c(1,1))
+bal0 = balance(rawdata=cc2[,covs],cc2$treat,matched=matches0$cnts,estimand="ATT")
+plot(bal0)
+bal0b = balance(rawdata=cc2[,covs],cc2$treat,matched=matches0b$cnts,estimand="ATT")
+plot(bal0b)
+# bayesian pscores def work better here
+sum(bal0$diff.means.matched[,4])
+#[1] 6.14
+sum(bal0b$diff.means.matched[,4])
+#[1] 9.08
+```
+
+Now let's see what this looks like for matching with replacement (this plot does not appear in the chapter).
+```{r}
+bal0.wr = balance(rawdata=cc2[,covs],treat=cc2$treat,matched=matches0.wr$cnts,estimand="ATT")
+plot(bal0.wr)
+bal0b.wr = balance(rawdata=cc2[,covs],cc2$treat,matched=matches0b.wr$cnts,estimand="ATT")
+plot(bal0b.wr)
+# comparison here is less clear but the following supports the non-bayesian solution
+sum(bal0.wr$diff.means.matched[,4])
+#[1] 5.26
+sum(bal0b.wr$diff.means.matched[,4])
+#[1] 5.18
+```
+
+## DOES IT MAKE SENSE AT THIS POINT TO COMPARE BALANCE BETWEEN THE MATCHING METHODS AND THE ESTIMATION METHODS??
+
+## SOMEWHERE TALK ABOUT HOW THE STANDARDIZATION DIFFERS DEPENDING ON THE 
+## ESTIMAND
+
+While in general we prefer visual summaries of our data, including for model fit and diagnostics, one downside to this display is that it displays standardized differences in means for binary variables which may not be the best option.  Since the variance of a binary variable is a function of the mean this means that these differences in means across groups are being standardized differentially based on how close the mean in each group is to .5, which does not seem appropriate.  For this reason common advice is to examine different balance diagnostics for continuous and binary variables.
+
+We demonstrate this using a plot of the data restructured using the matching with replacement approach.
+
+```{r}
+# first plot the binary
+plot(bal0.wr, which.covs="binary")
+# now plot the continuous
+plot(bal0.wr, which.covs="cont")
+```
+
+If we want to keep the scale the same as the previous plots then we could use the following
+
+```{r}
+# first plot the binary
+plot(bal0.wr, which.covs="binary", x.max=4)
+# now plot the continuous
+plot(bal0.wr, which.covs="cont", x.max=4)
+```
+
+
+## Step 4b:  Checking Overlap
+
+# First show overlap with our working model 
+
+```{r}
+# Plot the overlapping histograms for pscore1b, density
+hist(pscores1b[cc2$treat==0], xlim=c(-26,6), ylim=c(0,.22),
+     main="", border="darkgrey", breaks=seq(-26,6,by=1), 
+     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+hist(pscores1b[cc2$treat==1], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore1b, frequency
+hist(pscores1b[cc2$treat==0], xlim=c(-26,6), ylim=c(0,620),
+     main="", border="darkgrey", breaks=seq(-26,6,by=1), 
+     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+hist(pscores1b[cc2$treat==1], freq=TRUE, add=TRUE)
+
+```
+
+
+
+# Then show them why they shouldn't use overlap as a criteria for whether they have a good model using a cautionary tale.  To implement fit a propensity score model with one not-very-important predictor as the predictor.  Overlap should look great!  But it's not meaningful!
+
+
+```{r}
+ps3.mod <- glm(treat ~ unemp.rt, data=cc2,family=binomial) 
+pscores3 <- predict(ps3.mod, type="link")
+
+# Plot the overlapping histograms for pscore1b, density
+hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,8),
+     main="", border="darkgrey", 
+     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+hist(pscores3[cc2$treat==1], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore1b, frequency
+hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,1300),
+     main="", border="darkgrey", 
+     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+hist(pscores3[cc2$treat==1], freq=TRUE, add=TRUE)
+
+```
+
+In the chapter we'll also caution against relying too heavily on the propensity score alone to assess overlap since it can be overly influenced by covariates that strongly predict the treatment but not the outcome.
+
+
+#### Prior to Step 5:  Iterate across (2)-(4)
+
+This results in better balance but ignores all the state indicators which is weird.
+
+```{r}
+library("rstan")
+library("rstanarm")
+# this one works well but isn't really justified
+#form1_nj <- treat ~ as.factor(educ) + as.factor(ethnic) + b.marr  +
+# work.dur + prenatal + momage + sex + first + preterm + age +
+#  dayskidh + bw + unemp.rt
+# this one we can justify
+# add a de-meaned version of bw
+cc2$bw.std2 <- ((cc2$bw - mean(cc2$bw))/sd(cc2$bw))^2
+cc2$ma.std2 <- ((cc2$momage - mean(cc2$momage))/sd(cc2$momage))^2
+cc2$pt.std2 <- ((cc2$preterm - mean(cc2$preterm))/sd(cc2$preterm))^2
+cc2$dk.std2 <- ((cc2$dayskidh - mean(cc2$dayskidh))/sd(cc2$dayskidh))^2
+#
+form1 <- treat ~ bw + momage + preterm + dayskidh + bwg + hispanic + black + white + b.marr + b.marr + lths + hs + ltcoll + college + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw.std2
+# makes differnce in means better for birthweight and gets the ratio to .9
+# but makes all the other ratios worse
+#
+# first start with the bayesian pscores
+#ps_fit_1_full <- stan_glm(formula = form1, family=binomial(link="logit"), data=cc2)
+ps_fit_1 <- stan_glm(formula = form1, family=binomial(link="logit"), data=cc2, algorithm = "optimize")
+pscores1_full <- apply(posterior_linpred(ps_fit_1_full, type="link"), 2, mean)
+pscores1 <- apply(posterior_linpred(ps_fit_1, type="link"), 2, mean)
+#
+# find matches and the corresponding weights based on the bayesian pscores
+#matches1.wr <- matching(z=cc2$treat, score=pscores1, replace=TRUE)
+# calculate balance
+#bal1.wr = balance(rawdata=cc2[,covs],treat=cc2$treat,matched=matches1.wr$cnts,estimand="ATT")
+#
+# find matches and the corresponding weights based on the non-bayesian pscores
+ps_fit_1b <- glm(form1, family=binomial(link="logit"), data=cc2)
+pscores1b <- predict(ps_fit_1b, type="link")
+matches1b.wr <- matching(z=cc2$treat, score=pscores1b, replace=TRUE)
+# calculate balance
+bal1b.wr = balance(rawdata=cc2[,covs],treat=cc2$treat,matched=matches1b.wr$cnts,estimand="ATT")
+
+# first plot the Bayesian version
+plot(bal1.wr)
+# then the non-Bayesian version
+plot(bal1b.wr)
+
+# now just binary
+plot(bal1b.wr,which.covs="binary")
+plot(bal0b.wr,which.covs="binary")
+
+# now just continuous
+plot(bal1b.wr,which.covs="cont")
+plot(bal0b.wr,which.covs="cont")
+
+
+```
+
+## Now compare the four matching with replacement possibilities with my crappy 
+## average measure -- non-bayesian solution looks a bit better
+
+```{r echo=FALSE}
+## All of these are from matching with replacement
+# initial model -- bayesian fit
+sum(bal0.wr$diff.means.matched[,4])
+# initial model -- non-bayesian fit
+sum(bal0b.wr$diff.means.matched[,4])
+# new model -- bayesian fit
+sum(bal1.wr$diff.means.matched[,4])
+# new model -- non-bayesian fit
+sum(bal1b.wr$diff.means.matched[,4])
+```
+
+
+### Step 5:  Estimate the treatment effect on the re-structured data
+Estimating the treatment effect for the treated requires making a comparison between the average outcome for the treatment group and the average outcome for a comparison group restructured (reweighted) to "look like" the treatment group in terms of observable characteristics.
+
+We will account for the matching in our analyses by incorporating weights that reflect the number of times each observation should be used in the analysis.  If we are attempting to identify the effect of the treatment on the treated then all the treated units should have weights of 1 (unless we drop some for lack of common support).  However with one-to-one matching all our controls will have integer weights that reflect the number of times each was used as a match for a treated unit.  We adjust for the fact that some controls are used more than once but using probability weights (through robust (Huber sandwich) standard errors).
+
+```{r}
+
+# Let walk though various estimation strategies for the same matching result pscores0
+
+# common specification of the mean structure
+form.reg = as.formula(cc2[,c("ppvtr.36","treat",covs)])
+# ignoring the restructuring
+mod.um = glm(form.reg, data=cc2)
+round(summary(mod.um)$coef[2,],2)
+
+# and now with the weight function built into R originally
+mod0A = glm(form.reg, data=cc2, weight = matches1.wr$cnts)
+round(summary(mod0A)$coef[2,],2)
+# 6.34 (2.83)
+
+# CAN ADD BACK IN IF I ADD CLUSTER OPTION TO MATCHING FUNCTION
+# THEN COULD ALSO EXTEND TO ADD RANDOM EFFECTS -- EASY TO FIT WITH STAN?
+# now with the rms package
+#library(rms)
+#robcov(mod0A,cluster=matches0.wr$cnts)
+#  now another strategy
+
+### should try with STAN but without weights too
+
+# and now with Stan-glm with its built-in weight function
+#mod0B = stan_glm(form.reg, data=cc2, weight = matches0.wr$cnts,
+                 algorithm="optimizing")
+mod1 = stan_glm(form.reg, data=cc2, weight = matches1.wr$cnts,
+                 algorithm="optimizing")
+summary(mod1)
+# 
+# 6.6  3.3
+
+# including the restructuring and using the survey package to 
+# calculate appropriate s.e.'s
+library(survey)
+design1 <- svydesign(ids=~0, weights=matches1.wr$cnts, data=cc2)
+mod1C <- svyglm(form.reg, design = design1)
+summary(mod1C)$coef[2,]
+# 6.34   (4.08)
+
+# and now with the function I built years ago 
+#wls.all2 <- function(X, w = wts, Y = y, treat = Trt)
+xx = cbind(rep(1,nrow(cc2)),cc2$treat,as.matrix(cc2[,covs.nr]))
+mod1D <- wls.all2(X=xx, w=matches1.wr$cnts, treat=cc2$treat,
+                    Y = cc2$ppvtr.36)
+# 7.98  (6.34)
+
+# now try BART
+library(devtools)
+library(dbarts)
+install_github('vdorie/bartCause')
+library(bartCause)
+#modB1 = bartc(response = cc2$ppvtr.36, treatment = cc2$treat, confounders = cc2[,covs], data=cc2, estimand="att")
+xte = cbind(cc2[,c("treat",covs)], wt = matches1.wr$cnts)[matches1.wr$cnts!=0,]
+xtr = xte
+xtr[,1] = 1 - xtr[,1]
+yt = cc2$ppvtr.36[matches1.wr$cnts!=0]
+wt = matches1.wr$cnts[matches1.wr$cnts!=0]
+#mod0B1 = bart(x.train = xte, x.test = xtr, y.train = cc2$ppvtr.36, nskip = 500,
+ #            ndpost = 4000)
+mod1B1 = bart(x.train = xte, x.test = xtr, y.train = yt, nskip = 500, ndpost = 4000, weights = wt)
+# w/o weights estimate is 10.2, without pscores as a covariate it's 10.5
+diffs = (mod1B1$yhat.train - mod1B1$yhat.test)[,xte[,1]==1]
+mean(apply(diffs,2,mean))
+# 11.0 
+sd(apply(diffs,1,mean))
+# 2.3
+
+# or IPTW weights  THESE DONE INCORRECTLY!
+#wt.iptw = inv.logit(pscores0/(1 - pscores0))
+wt.iptw1 = inv.logit(pscores1)/(1 - inv.logit(pscores1))
+wt.iptw1[cc2$treat==0] = wt.iptw1[cc2$treat==0]*(sum(wt.iptw1[cc2$treat==0])/sum(cc2$treat==0))
+wt.iptw1[cc2$treat==1] = 1
+wt.iptw1[wt.iptw1>40] = 40
+
+mod1B2 = bart(x.train = xte, x.test = xtr, y.train = yt, nskip = 500,ndpost = 4000, weights = wt.iptw1)
+# w/o weights estimate is 10.2, without pscores as a covariate it's 10.5
+diffs = (mod1B2$yhat.train - mod1B2$yhat.test)[,xte[,1]==1]
+mean(apply(diffs,2,mean))
+# 4.1  
+sd(apply(diffs,1,mean))
+# 4.22
+
+```
+
+Now we'll use IPTW based on both of the Stan estimated pscores.  Really should due a full search but we're just demonstrating how it works.  
+
+```{r}
+###  Balance pscores 0
+wt.iptw0 = inv.logit(pscores0)/(1 - inv.logit(pscores0))
+wt.iptw0[cc2$treat==0] = wt.iptw0[cc2$treat==0]*(sum(wt.iptw0[cc2$treat==0])/sum(cc2$treat==0))
+wt.iptw0[cc2$treat==1] = 1
+#wt.iptw0[wt.iptw0>40] = 40
+#
+par(mfrow=c(1,1))
+bal0.iptw = balance(rawdata=cc2[,covs],treat=cc2$treat,matched=wt.iptw0,estimand="ATT")
+plot(bal0.iptw)
+plot(bal0.iptw, which.covs="binary", x.max=4)
+plot(bal0.iptw, which.covs="cont", x.max=4)
+
+###  Balance pscores 1
+bal1.iptw = balance(rawdata=cc2[,covs],treat=cc2$treat,matched=wt.iptw1,estimand="ATT")
+plot(bal1.iptw)
+plot(bal1.iptw, which.covs="binary", x.max=4)
+plot(bal1.iptw, which.covs="cont", x.max=4)
+
+# not great
+
+### Results from pscores0
+# GLM
+mod0A_I = glm(form.reg, data=cc2, weight = wt.iptw0)
+round(summary(mod0A_I)$coef[2,],2)
+# 2.78  (.73)
+
+# Stan
+mod0_I = stan_glm(form.reg, data=cc2, weight = wt.iptw0, algorithm="optimizing")
+mod0_I
+# 2.8 (3.8)
+
+### Results from pscores1
+# GLM
+mod1A_I = glm(form.reg, data=cc2, weight = wt.iptw1)
+round(summary(mod1A_I)$coef[2,],2)
+# 3.67 (.9)
+
+# and now with Stan-glm with its built-in weight function
+mod1_I = stan_glm(form.reg, data=cc2, weight = wt.iptw1, algorithm="optimizing")
+mod1_I
+#  4.0  (4.8)
+# 
+
+
+```
+
+
+
+
+
