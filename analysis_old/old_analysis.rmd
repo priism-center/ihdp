@@ -1,0 +1,85 @@
+---
+title: IHDP analyses for CH10 of GH
+output: pdf_document
+---
+
+```{r rmd_setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r libraries, include=FALSE}
+
+```
+
+# Data prep
+
+```{r data prep}
+cc <- read.table("data/ihdp.nlsy.imp1.txt",header=T,sep="\t")
+cc$treat <- cc$treat-1
+
+cc$ethnic = cc$hispanic
+cc$ethnic[cc$black==1]=2
+cc$ethnic[cc$white==1]=3
+
+cc$educ = cc$lths
+cc$educ[cc$hs==1]=2
+cc$educ[cc$ltcoll==1]=3
+cc$educ[cc$college==1]=4
+cc$educ3=cc$educ
+cc$educ3[cc$educ>2]=cc$educ3[cc$educ>2]-1
+
+cc$bwg=(cc$bw>2000)*1
+
+cc$state=cc$st5
+cc$state[cc$st9==1]=2
+cc$state[cc$st12==1]=3
+cc$state[cc$st25==1]=4
+cc$state[cc$st36==1]=5
+cc$state[cc$st42==1]=6
+cc$state[cc$st48==1]=7
+cc$state[cc$st53==1]=8
+
+cc$state2=cc$state
+cc$state2[cc$st5==1]=0
+
+cc$state3=cc$state
+cc$state3[cc$st53==1]=0
+
+cc2<-cc[cc$bw>1500,]
+
+cc2$neg.bw = 2500 - cc2$bw
+cc2$no.prenatal = 1-cc2$prenatal
+cc2$b.unmarr = 1-cc2$b.marr
+
+covs <- c("hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","momage","sex","first","preterm","age","dayskidh","bw")
+covs.st <- c("hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","momage","sex","first","age","preterm","dayskidh","bw","unemp.rt","st5","st9","st12","st25","st36","st42","st48","st53")
+
+covs.nba <- c("hispanic","black","white","b.marr","lths","hs","ltcoll","college",
+             "work.dur","prenatal","momage","sex","first","age")
+covs.ba <- c("dayskidh","bw","preterm")
+
+cc2$bwT = (cc2$bw-1500)^2
+#cc2$bwT = (cc2$neg.bw+5100)^2
+cc2$dayskidT = log(cc2$dayskidh+1)
+cc2$pretermT = (cc2$preterm+8)^2
+cc2$momageT = (cc2$momage^2)
+
+############################################
+## make a dataset to investigate bias amplification
+data.ba = cc2[,c("ppvtr.36", "treat", covs.ba,covs.nba)]
+lm(data.ba)
+
+data.nba = cc2[,c("ppvtr.36", "treat",covs.nba)]
+lm(data.nba)
+```
+
+# Univariate
+
+```{r}
+
+```
