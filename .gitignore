@@ -1,4 +1,5 @@
 .DS_Store
+ihdp.Rproj
 
 # User files/folders
 
@@ -38,3 +39,4 @@ vignettes/*.pdf
 
 # Shiny token, see https://shiny.rstudio.com/articles/shinyapps.html
 rsconnect/
+.Rproj.user
