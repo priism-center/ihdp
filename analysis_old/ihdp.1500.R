@@ -35,37 +35,37 @@ data.nba = cc2[,c("ppvtr.36", "treat",covs.nba)]
 lm(data.nba)
 
 library(foreign)
-write.dta(data.ba,file="data_ba.dta")
+write.dta(data.ba,file="data/data_ba.dta")
 #######
 
 psdata = cc2[,covs.st]
-save(psdata,file="psdata.Rdata")
+save(psdata,file="data/psdata.Rdata")
 
 #########  FIRST OVERLAP PLOTS
 
 
 #### UNIVARIATE
-postscript("bw.overlap.dens.ps", height=3.5in, width=5in, horizontal=T)
+postscript("analysis_old/plots/bw.overlap.dens.ps", height=3.5, width=5, horizontal=T)
 par(mfrow=c(1,1))
 hist(cc2$bw[cc2$treat==1],xlim=c(0,6000),main="treatment group",xlab="birthweight",freq=F)
 hist(cc2$bw[cc2$treat==0],xlim=c(0,6000),main="control group",xlab="birthweight",freq=F,add=T,border="darkgrey")
 dev.off()
 
-postscript("bw.overlap.freq.ps", height=3.5in, width=5in, horizontal=T)
+postscript("bw.overlap.freq.ps", height=3.5, width=5, horizontal=T)
 par(mfrow=c(1,1))
 hist(cc2$bw[cc2$treat==0],xlim=c(0,6000),main="control group",xlab="birthweight",border="darkgrey")
 hist(cc2$bw[cc2$treat==1],xlim=c(0,6000),main="treatment group",xlab="birthweight",add=T)
 dev.off()
 
 # breaks the same across groups
-postscript("bw.overlap.freq.ps", height=3.5in, width=5in, horizontal=T)
+postscript("bw.overlap.freq.ps", height=3.5, width=5, horizontal=T)
 par(mfrow=c(1,1))
 hist(cc2$bw[cc2$treat==0],xlim=c(0,6000),main="control group",xlab="birthweight",border="darkgrey",breaks=seq(0,6000,400))
 hist(cc2$bw[cc2$treat==1],xlim=c(0,6000),main="treatment group",xlab="birthweight",add=T,breaks=seq(0,6000,400))
 dev.off()
 
 
-postscript("age.overlap.dens.ps", height=3.5in, width=5in, horizontal=T)
+postscript("age.overlap.dens.ps", height=3.5, width=5, horizontal=T)
 par(mfrow=c(1,1))
 hist(cc2$age[cc2$treat==1],xlim=c(0,110),main="treatment group",xlab="age",breaks=seq(0,110,10),freq=F)
 hist(cc2$age[cc2$treat==0],xlim=c(0,110),main="control group",xlab="age",border="darkgrey",breaks=seq(0,110,10),add=T,freq=F)
@@ -73,7 +73,7 @@ dev.off()
 
 
 ## now preterm
-postscript("preterm.overlap.freq.ps", height=3.5in, width=5in, horizontal=T)
+postscript("preterm.overlap.freq.ps", height=3.5, width=5, horizontal=T)
 par(mfrow=c(1,1))
 hist(cc2$preterm[cc2$treat==0],xlim=c(0,6000),main="control group",xlab="birthweight",border="darkgrey")
 hist(cc2$preterm[cc2$treat==1],xlim=c(0,6000),main="treatment group",xlab="birthweight",add=T)
