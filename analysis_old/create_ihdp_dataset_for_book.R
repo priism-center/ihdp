@@ -1,6 +1,6 @@
 ### "truth" for this group is 7.4
 
-cc <- read.table("ihdp.nlsy.imp1.txt",header=T,sep="\t")
+cc <- read.table("data/ihdp.nlsy.imp1.txt",header=T,sep="\t")
 cc$treat <- cc$treat-1
 
 cc$ethnic = cc$hispanic
@@ -33,10 +33,10 @@ cc$state3[cc$st53==1]=0
 #covs <- c("hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","momage","sex","first","preterm","age","dayskidh","bw","unemp.rt","st5","st9","st12","st25","st36","st42","st48","st53")
 
 # code for looking at nlsy/ihdp high quality child care data
-cc2<-cc2[cc$bw>1500,]
+cc2<-cc[cc$bw>1500,]
 
 cc2$neg.bw = 2500 - cc2$bw
 cc2$no.prenatal = 1-cc2$prenatal
 cc2$b.unmarr = 1-cc2$b.marr
 
-save(cc2,file="cc2.Rdata")
+save(cc2,file="data/cc2.Rdata")
