@@ -81,5 +81,41 @@ lm(data.nba)
 # Univariate
 
 ```{r}
+hist(cc2$bw[cc2$treat==1], xlim=c(0,6000), main="treatment group", xlab="birthweight", freq=F)
+hist(cc2$bw[cc2$treat==0], xlim=c(0,6000), main="control group", xlab="birthweight", freq=F, add=T, border="darkgrey")
 
+hist(cc2$bw[cc2$treat==0], xlim=c(0,6000), main="control group", xlab="birthweight", border="darkgrey")
+hist(cc2$bw[cc2$treat==1], xlim=c(0,6000), main="treatment group", xlab="birthweight", add=T)
+
+# breaks the same across groups
+hist(cc2$bw[cc2$treat==0], xlim=c(0,6000), main="control group", xlab="birthweight", border="darkgrey", breaks=seq(0,6000,400))
+hist(cc2$bw[cc2$treat==1], xlim=c(0,6000), main="treatment group", xlab="birthweight", add=T, breaks=seq(0,6000,400))
+
+hist(cc2$age[cc2$treat==1], xlim=c(0,110), main="treatment group", xlab="age", breaks=seq(0,110,10), freq=F)
+hist(cc2$age[cc2$treat==0], xlim=c(0,110), main="control group", xlab="age", border="darkgrey", add=T, breaks=seq(0,110,10), freq=F)
+
+## now preterm
+hist(cc2$preterm[cc2$treat==0], xlim=c(0,6000), main="control group",xlab="birthweight", border="darkgrey")
+hist(cc2$preterm[cc2$treat==1], xlim=c(0,6000), main="treatment group",xlab="birthweight", add=T)
+
+## now educ
+hist(cc$educ[cc$treat==0], xlim=c(0,5), main="control group", xlab="education", border="darkgrey", freq=F)
+hist(cc$educ[cc$treat==1], xlim=c(0,5), main="treatment group", xlab="education", add=T, freq=F)
+
+hist(cc$college[cc$treat==0], xlim=c(0,5), main="control group", xlab="college", border="darkgrey", freq=F)
+hist(cc$college[cc$treat==1], xlim=c(0,5), main="treatment group", xlab="college", add=T, freq=F)
+
+hist(cc$educ3[cc$treat==0], xlim=c(0,5), main="control group", xlab="educ3", border="darkgrey", freq=F)
+hist(cc$educ3[cc$treat==1], xlim=c(0,5), main="treatment group",  xlab="educ3", add=T, freq=F)
+
+## plots actually used to illustrate distinctions between overlap and balance
+# now age
+plot(x=seq(0,5,.1), y=seq(0,1800,(1800/50)), bty="n", xaxt="n", yaxt="n", mgp=c(2,.5,0), xlab="mother's education", ylab="frequency", type="n", main="")
+axis(1, 1:4)
+axis(2, c(0,1000,2000))
+hist(cc2$educ[cc$treat==0], xlim=c(0,5), main="", border="darkgrey", breaks=c(.5,1.5,2.5,3.5,4.5), add=T)
+hist(cc2$educ[cc$treat==1], xlim=c(0,5), xlab="education", breaks=c(.5,1.5,2.5,3.5,4.5), add=T)
+
+hist(cc2$age[cc2$treat==0], xlim=c(0,110), main="", xlab="age of child (months)", border="darkgrey", breaks=seq(0,110,10), mgp=c(2,.5,0))
+hist(cc2$age[cc2$treat==1], xlim=c(0,110), xlab="", breaks=seq(0,110,10), add=T)
 ```
