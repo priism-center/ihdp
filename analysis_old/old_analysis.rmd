@@ -13,7 +13,8 @@ knitr::opts_knit$set(root.dir='..')
 ```
 
 ```{r libraries, include=FALSE}
-
+library(knitr)
+library(kableExtra)
 ```
 
 # Data prep
@@ -118,4 +119,26 @@ hist(cc2$educ[cc$treat==1], xlim=c(0,5), xlab="education", breaks=c(.5,1.5,2.5,3
 
 hist(cc2$age[cc2$treat==0], xlim=c(0,110), main="", xlab="age of child (months)", border="darkgrey", breaks=seq(0,110,10), mgp=c(2,.5,0))
 hist(cc2$age[cc2$treat==1], xlim=c(0,110), xlab="", breaks=seq(0,110,10), add=T)
+```
+
+
+```{r}
+#covs <- c("hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","momage","sex","first","preterm","age","dayskidh","bw","unemp.rt","st5","st9","st12","st25","st36","st42","st48","st53")
+covs2 <- c("neg.bw","preterm","dayskidh","sex","first","age","black","hispanic","white","b.unmarr","lths","hs","ltcoll","college","work.dur","no.prenatal","momage") 
+cov.nms <- c("negative birth weight","weeks preterm","days in hospital","male","first born","age","black","Hispanic","white","unmarried at birth","less than high school","high school graduate","some college","college graduate","worked during pregnancy","had no prenatal care","age at birth")
+
+diff.means=matrix(0, length(covs2), 6)
+for (i in 1:length(covs2)) {
+	diff.means[i,1:2] <- c(mean(cc2[cc2$treat==1, covs2[i]]),  mean(cc2[cc2$treat==0, covs2[i]]))
+	diff.means[i,3] <- diff.means[i,1] - diff.means[i,2]
+	diff.means[i,5] <- sqrt(var(cc2[cc2$treat==1, covs2[i]]) / sum(cc2$treat==1) + var(cc2[cc2$treat==0, covs2[i]]) / sum(cc2$treat==0))
+	diff.means[i,6] <- sqrt((var(cc2[cc2$treat==1, covs2[i]]) + var(cc2[cc2$treat==0, covs2[i]])) / 2)
+	diff.means[i,4] <- diff.means[i,3] / diff.means[i,6]
+}
+dimnames(diff.means) <- list(covs2, c("treat","control","diff","diff.std","se","sd"))
+round(diff.means, 2)
+
+kable(diff.means)
+
+regression.simp.table(name=cov.nms, est=diff.means[,3], sd=diff.means[,6], file="data/balance.table.ps")
 ```
