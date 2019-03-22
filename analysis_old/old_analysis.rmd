@@ -512,8 +512,13 @@ for(i in 1:niters){
     pscores2.rf.i = ps.refit.2.i$linear
     not.comm[i] = sum(pscores2.rf.i[cc2.refit.i$treat.rand==1] > max(pscores2.rf.i[cc2.refit.i$treat.rand==0]))
 }
+```
 
+# Geographic information
 
+does not match text, slightly greater (8.9 vs 8.8)
+
+```{r}
 #################
 #### and a third version to deal with the geographic location  DOESN'T WORK WELL -- WON'T USE
 ps.fit.3 <- glm(treat ~ work.dur + prenatal + preterm + age + momage + sex + 
@@ -531,7 +536,7 @@ ps.fit.3 <- glm(treat ~ work.dur + prenatal + preterm + age + momage + sex +
 #               data=cc2,family=binomial) 
 # 10.22
 
-pscores3 <- ps3.mod$linear
+pscores3 <- ps.fit.3$linear
 matches3 <- matching(z=cc2$treat, score=pscores3)
 matched3 <- cc2[matches3$matched,]
 ps3.mat <- pscores3[matches3$matched]
@@ -540,9 +545,11 @@ reg.st.ps <- lm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcol
                work.dur + prenatal + momage + sex + first + preterm + age + dayskidh +
                bw + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53,
                data=matched3)
-summary(reg.st.ps)$coef[2,]
+round(summary(reg.st.ps)$coef[2,], digits=2)
 # 8.92 (2.09)
+```
 
+```{r}
 #umemp.rt?
 diff.means.matched3=matrix(0, length(covs2), 6)
 for (i in 1:length(covs2)) {
