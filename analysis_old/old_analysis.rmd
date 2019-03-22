@@ -13,8 +13,8 @@ knitr::opts_knit$set(root.dir='..')
 ```
 
 ```{r libraries, include=FALSE}
+library(arm)
 library(knitr)
-library(kableExtra)
 ```
 
 # Data prep
@@ -108,7 +108,13 @@ hist(cc$college[cc$treat==1], xlim=c(0,5), main="treatment group", xlab="college
 
 hist(cc$educ3[cc$treat==0], xlim=c(0,5), main="control group", xlab="educ3", border="darkgrey", freq=F)
 hist(cc$educ3[cc$treat==1], xlim=c(0,5), main="treatment group",  xlab="educ3", add=T, freq=F)
+```
 
+## Figure 10.5
+
+Matches text
+
+```{r}
 ## plots actually used to illustrate distinctions between overlap and balance
 # now age
 plot(x=seq(0,5,.1), y=seq(0,1800,(1800/50)), bty="n", xaxt="n", yaxt="n", mgp=c(2,.5,0), xlab="mother's education", ylab="frequency", type="n", main="")
@@ -119,7 +125,9 @@ hist(cc2$educ[cc$treat==1], xlim=c(0,5), xlab="education", breaks=c(.5,1.5,2.5,3
 
 hist(cc2$age[cc2$treat==0], xlim=c(0,110), main="", xlab="age of child (months)", border="darkgrey", breaks=seq(0,110,10), mgp=c(2,.5,0))
 hist(cc2$age[cc2$treat==1], xlim=c(0,110), xlab="", breaks=seq(0,110,10), add=T)
+```
 
+```{r}
 #covs <- c("hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","momage","sex","first","preterm","age","dayskidh","bw","unemp.rt","st5","st9","st12","st25","st36","st42","st48","st53")
 covs2 <- c("neg.bw","preterm","dayskidh","sex","first","age","black","hispanic","white","b.unmarr","lths","hs","ltcoll","college","work.dur","no.prenatal","momage") 
 cov.nms <- c("negative birth weight","weeks preterm","days in hospital","male","first born","age","black","Hispanic","white","unmarried at birth","less than high school","high school graduate","some college","college graduate","worked during pregnancy","had no prenatal care","age at birth")
@@ -137,12 +145,14 @@ for (i in 1:length(covs2)) {
 }
 dimnames(diff.means) <- list(covs2, c("treat", "control", "diff", "diff.std", "se", "sd"))
 round(diff.means, 2)
-
-kable(diff.means)
 ```
 
 
 # Bivariate
+
+## Figure 10.4
+
+matches text
 
 ```{r}
 #need to jitter things a little
@@ -157,12 +167,14 @@ points(cc2$bw[cc2$treat==1] + runif(sum(cc2$treat==1), -.5,5), cc2$ppvtr.36[cc2$
 #curve(tmp[1]+tmp[2]*x,add=T,col="darkgrey",cex=2)
 curve(tmp[1]+tmp[2]*x, add=T, lty=2)
 curve(tmp[1]+tmp[3]+tmp[2]*x, add=T)
+```
 
+```{r}
 ## also tried ineeds, age, momage (shows treats with no comps), momed (excellent
 ##overlap)
 
 # income to needs
-tmp <- lm(ppvtr.36~age+treat,data=cc22)$coef
+tmp <- lm(ppvtr.36~age+treat,data=cc2)$coef
 plot(cc2$age, cc2$ppvtr.36, xlab="age of child (months) in year 2000", ylab="test scores at age 3", cex=.8, mgp=c(2,.5,0), main="data and estimated regression line", type="n")
 points(cc2$age[cc2$treat==1], cc2$ppvtr.36[cc2$treat==1], pch=20, cex=.8)
 points(cc2$age[cc2$treat==0], cc2$ppvtr.36[cc2$treat==0], cex=.8, pch=20, col="gray")
@@ -172,6 +184,10 @@ curve(tmp[1]+tmp[3]+tmp[2]*x, add=T)
 
 
 # Stratification
+
+## Figure 10.6
+
+matches text
 
 ```{r}
 tes.ns=matrix(0,4,4)
@@ -199,12 +215,18 @@ tes.ns[4,] <- c(
 	sum(cc2$college==1),
 	var(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) / sum(cc2$treat==1 & cc2$college==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1] / sum(cc2$treat==0 & cc2$college==1)))
 
-kable(tes.ns, digits=2)
+temp <- tes.ns
+rownames(temp) <- c('lths', 'hs', 'ltcoll', 'college')
+# calc se from var
+temp[,4] <- sqrt(tes.ns[,4])
+kable(temp, digits=2, col.names=c('trt_eff', 'n_trt', 'n_ctrl', 'se'))
+```
 
-#these are variances not standard errors in table
-#> sqrt(tes.ns[,4])
-#[1] 1.341866 1.818015 2.307679 2.140321
+## Formula 10.2
 
+matches text
+
+```{r}
 ## now overall te.s and vars
 c(tes.ns[,1]) %*% tes.ns[,2] / sum(tes.ns[,2])
 # 7.03
@@ -221,10 +243,11 @@ denom= (126+82+48+34)^2
 
 sqrt(num/denom)
 
-reg.strat <- lm.all(ppvtr.36 ~ treat + as.factor(educ), data=cc2)
+reg.strat <- lm(ppvtr.36 ~ treat + as.factor(educ), data=cc2)
 # 6.99
+```
 
-
+```{r}
 ### by birthweight group
 tes.ns2=matrix(0,2,3)
 tes.ns2[1,] <- c(
@@ -237,6 +260,8 @@ tes.ns2[2,] <- c(
 	sum(cc2$treat==1 & cc2$bwg==0),
 	sum(cc2$bwg==0)
 	)
+
+round(tes.ns2, 2)
 
 #          [,1] [,2] [,3]
 # [1,]  7.63621  142 4159
@@ -267,12 +292,12 @@ covs <- c("bw","bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","c
 #                  b.marr*(bw + preterm +dayskidT),
 #                data=cc2,family=binomial) 
 
-ps.fit.2 <- glm(treat ~ work.dur + prenatal + preterm + age + momage + sex + 
+ps.fit.2 <- glm(treat ~ work.dur + prenatal + preterm + age + momage + sex +
                   first + bwT + dayskidT + preterm + pretermT + momage +
-                  as.factor(ethnic)*b.marr + 
+                  as.factor(ethnic)*b.marr +
                   b.marr*hs + b.marr*college +
                   b.marr*dayskidT,
-                  data=cc2, family=binomial)                 
+                  data=cc2, family=binomial)               
 
 pscores2 <- ps.fit.2$linear
 matches2 <- matching(z=cc2$treat, score=pscores2)
@@ -285,7 +310,7 @@ sum(pscores2[cc2$treat==1] > max(pscores2[cc2$treat==0]))
 reg.ps <- lm(ppvtr.36 ~ treat + bw + bwg + hispanic + black + b.marr + lths + hs + ltcoll + 
                work.dur + prenatal + momage + sex + first + preterm + age + 
                dayskidh, data=matched2)
-summary(reg.ps)$coef[2,]
+round(summary(reg.ps)$coef[2,], digits=2)
 # 10.3 (1.55)
 
 diff.means.matched2=matrix(0, length(covs2), 6)
@@ -326,7 +351,7 @@ reg.st.ps <- lm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcol
                   work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + 
                   bw + unemp.rt + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53,
                   data=matched2)
-summary(reg.st.ps)$coef[2,]
+round(summary(reg.st.ps)$coef[2,], digits=2)
 # 10.3 (2.26)
 ########
 
@@ -370,7 +395,12 @@ points(A + B*(est2/sd2), -data.locations, pch=20, cex=1.5)
 #    text (A + B*ax, -J-1-.7, ax, cex=1)
 #  }
 dev.off()
+```
 
+## Figure 10.7
+
+does not match text
+```{r}
 ##########
 ### plot of overlap in pscores
 
@@ -397,9 +427,6 @@ sum(pscores2<(-50))
 # 6 controls deleted from the plot to aid in seeing differences across groups
 ### plot of overlap in pscores FREQUENCY NOT DENSITY
 
-##postscript("ps.overlap.dens.ps", height=3.5, width=5, horizontal=T)
-postscript("ihdp.ps.overlap.freq.ps", height=3.5, width=7, horizontal=T)
-#pdf("ps.overlap.freq.pdf", height=3.5, width=3.5)
 par(mfrow=c(1,2))
 par(mar=c(4,2,4,2))
 hist(pscores2[cc2$treat==0],
@@ -413,7 +440,6 @@ hist(ps2.mat[matched2$treat==1], nclass=20, add=T)
 dev.off()
 
 pscores2I=invlogit(pscores2)
-#pdf("ps.overlap.freq.pdf", height=3.5, width=3.5)
 par(mfrow=c(1,2))
 par(mar=c(4,2,4,2))
 hist(pscores2I[cc2$treat==0&pscores2I>.01],
@@ -429,10 +455,12 @@ sum(pscores2I<.01)
 # removing the 3652 observations from the plot with pscores<.01
 
 sum(pscores2[cc2$treat==1] > max(pscores2[cc2$treat==0]))
+```
 
-#### UNIVARIATE
 
+# UNIVARIATE
 
+```{r}
 ### overfit diagnostic
 set.seed(1234)
 cc2.refit = cbind.data.frame(cc2, treat.rand = rbinom(nrow(cc2), 1, mean(cc2$treat)))  
@@ -450,8 +478,8 @@ ps.refit.2 <- glm(treat.rand ~ work.dur + prenatal + preterm + age + momage + se
 
 pscores2.rf = ps.refit.2$linear
 pscores2I.rf=invlogit(pscores2.rf)
-#postscript("ihdp.ps.overlap.freq.ps", height=3.5, width=7, horizontal=T)
-#pdf("ps.overlap.freq.pdf", height=3.5, width=3.5)
+
+
 par(mfrow=c(2,1))
 par(mar=c(4,2,4,2))
 hist(pscores2I.rf[cc2.refit$treat.rand==0], xlim=c(0.0,.25), main="before matching", xlab="propensity score",
