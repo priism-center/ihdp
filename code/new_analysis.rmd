@@ -141,8 +141,8 @@ tes.ns[4,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) - mean(cc2$ppv
                     )
                 )
 
-colnames(tes.ns) <- c('lths', 'hs', 'ltcoll', 'college')
-rownames(tes.ns) <- c('te', 'n.trt', 'n.ctrl', 'se')
+rownames(tes.ns) <- c('lths', 'hs', 'ltcoll', 'college')
+colnames(tes.ns) <- c('te', 'n.trt', 'n.ctrl', 'se')
 round(tes.ns,2)
 ```
 ```{r}
@@ -155,7 +155,8 @@ tes.ns[1,] <- c(
     mean(cc2$ppvtr.36[treated & lths]) - mean(cc2$ppvtr.36[!treated & lths]),
     sum(treated & lths),
     sum(lths),
-    sqrt(var(cc2$ppvtr.36[treated & lths]) / sum(treated & lths) + var(cc2$ppvtr[treated & lths] / sum(!treated & lths)))
+    sqrt(var(cc2$ppvtr.36[treated & lths]) / sum(treated & lths) + var(cc2$ppvtr[!treated & lths]) / sum(!treated & lths))
+    )
 ```
 
 ### Section 19.7 -- Initial propensity score analysis
