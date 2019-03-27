@@ -285,13 +285,15 @@ covs <- c("bw","bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","c
 
 ### transformed variables now created at top of file
 
-#ps.fit.2 <- glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr +
-#                  work.dur + prenatal + preterm + age + momage + sex + 
-#                  first + bw + dayskidT + preterm + pretermT + momage + 
-#                  momageT + black*(bw + preterm +dayskidT) +  
-#                  b.marr*(bw + preterm +dayskidT),
-#                data=cc2,family=binomial) 
+# spec from text
+ps.fit.2 <- glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr +
+                 work.dur + prenatal + preterm + age + momage + sex + 
+                 first + bw + dayskidT + preterm + pretermT + momage + 
+                 momageT + black*(bw + preterm +dayskidT) +  
+                 b.marr*(bw + preterm +dayskidT),
+               data=cc2,family=binomial) 
 
+# additional spec?
 ps.fit.2 <- glm(treat ~ work.dur + prenatal + preterm + age + momage + sex +
                   first + bwT + dayskidT + preterm + pretermT + momage +
                   as.factor(ethnic)*b.marr +
