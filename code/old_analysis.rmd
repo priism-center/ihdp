@@ -51,7 +51,7 @@ cc$state2[cc$st5==1]=0
 cc$state3=cc$state
 cc$state3[cc$st53==1]=0
 
-cc2<-cc[cc$bw>1500,]
+cc2 <- cc[cc$bw>1500,]
 
 cc2$neg.bw = 2500 - cc2$bw
 cc2$no.prenatal = 1-cc2$prenatal
@@ -300,6 +300,7 @@ ps.fit.2 <- glm(treat ~ work.dur + prenatal + preterm + age + momage + sex +
                   data=cc2, family=binomial)               
 
 pscores2 <- ps.fit.2$linear
+# matching w/o replacement
 matches2 <- matching(z=cc2$treat, score=pscores2)
 matched2 <- cc2[matches2$matched,]
 ps2.mat <- pscores2[matches2$matched]
