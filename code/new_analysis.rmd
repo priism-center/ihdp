@@ -24,7 +24,9 @@ source("functions/new/balance.R")
 source("functions/new/estimation.R")
 library(dbarts)
 library(rstan)
+    options(mc.cores = parallel::detectCores())
 library(rstanarm)
+library(arm)
 ```
 
 
@@ -34,17 +36,21 @@ Loading the data like this will create a dataframe called cc2.  It will be helpf
 
 ```{r}
 load("data/cc2.Rdata")
-covs.bin <- c("bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53") 
+covs.bin <- c("bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
 # above is good for balance checks but will lead to linear dependencies to avoid use this version (nr = no redundancy)
+
+# no race
 covs.bin.nr <- c("bwg","hispanic","black","b.marr","lths","hs","ltcoll","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
-#covs.cont <- c("bw","momage","preterm","age","dayskidh")   
-covs.cont <- c("bw","preterm","momage","dayskidh")   
-covs=c(covs.cont,covs.bin)
+
+#covs.cont <- c("bw","momage","preterm","age","dayskidh")
+covs.cont <- c("bw","preterm","momage","dayskidh")
+
+covs <- c(covs.cont, covs.bin)
 cov.nms <- c("birth weight","weeks preterm","age at birth","days in hospital","male","first born","age","black","Hispanic","white","unmarried at birth","less than high school","high school graduate","some college","college graduate","worked during pregnancy","had no prenatal care")
-#
-covs.nr = c(covs.cont,covs.bin.nr)
-form.bal = as.formula(cc2[,c("treat",rev(covs))])
-mod.for.bal <- glm(form=form.bal,family="binomial",data=cc2)
+
+covs.nr <- c(covs.cont, covs.bin.nr)
+form.bal <- as.formula(cc2[, c("treat", rev(covs))])
+mod.for.bal <- glm(form=form.bal, family="binomial", data=cc2)
 #[31] "income" ) # income is technically post treatment
 # st99 also problematic since only appears in the control group
 ```
@@ -91,11 +97,11 @@ And two more:
 ```{r}
 par(mfrow=c(1,2))
 #
-hist(cc2$preterm[cc2$treat==0],main="",xlab="preterm",border="darkgrey",mgp=c(2,.5,0),freq=FALSE,breaks=seq(-8,14,1))
-hist(cc2$preterm[cc2$treat==1],main="",xlab="preterm",freq=FALSE,add=TRUE)
+hist(cc2$preterm[cc2$treat==0], main="",xlab="preterm",border="darkgrey",mgp=c(2,.5,0),freq=FALSE,breaks=seq(-8,14,1))
+hist(cc2$preterm[cc2$treat==1], main="",xlab="preterm",freq=FALSE,add=TRUE)
 #
-hist(cc2$dayskidh[cc2$treat==0],main="",xlab="days in hospital", border="darkgrey",mgp=c(2,.5,0),freq=FALSE,breaks=seq(0,100,5))
-hist(cc2$dayskidh[cc2$treat==1],main="",xlab="preterm",freq=FALSE,add=TRUE)
+hist(cc2$dayskidh[cc2$treat==0], main="",xlab="days in hospital", border="darkgrey",mgp=c(2,.5,0),freq=FALSE,breaks=seq(0,100,5))
+hist(cc2$dayskidh[cc2$treat==1], main="",xlab="preterm",freq=FALSE,add=TRUE)
 
 ```
 These last two might be the more interesting to include in the manuscript.
@@ -106,15 +112,50 @@ Section 19.6 starts with a table presenting results from a stratified analysis o
 ```{r}
 #Stratified analyses
 ### CODE THIS MORE EFFICIENTLY!  use aggregate function?  or just one of the apply's?
-tes.ns=matrix(0,4,4)
-tes.ns[1,]<-c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]), 
-              sum(cc2$treat==1 & cc2$lths==1), sum(cc2$lths==1), sqrt(var(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1])/sum(cc2$treat==1 & cc2$lths==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]/sum(cc2$treat==0 & cc2$lths==1))))
-tes.ns[2,]<-c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]), sum(cc2$treat==1 & cc2$hs==1), sum(cc2$hs==1), sqrt(var(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1])/sum(cc2$treat==1 & cc2$hs==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]/sum(cc2$treat==0 & cc2$hs==1))))
-tes.ns[3,]<-c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]), sum(cc2$treat==1 & cc2$ltcoll==1), sum(cc2$ltcoll==1), sqrt(var(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1])/sum(cc2$treat==1 & cc2$ltcoll==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]/sum(cc2$treat==0 & cc2$ltcoll==1))))
-tes.ns[4,]<-c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]), sum(cc2$treat==1 & cc2$college==1), sum(cc2$college==1), sqrt(var(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1])/sum(cc2$treat==1 & cc2$college==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]/sum(cc2$treat==0 & cc2$college==1))))
+tes.ns <- matrix(0,4,4)
+tes.ns[1,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]), 
+                sum(cc2$treat==1 & cc2$lths==1),
+                sum(cc2$lths==1),
+                sqrt(
+                    var(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) / sum(cc2$treat==1 & cc2$lths==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]) / sum(cc2$treat==0 & cc2$lths==1)
+                    )
+                )
+tes.ns[2,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]),
+                sum(cc2$treat==1 & cc2$hs==1),
+                sum(cc2$hs==1),
+                sqrt(
+                    var(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) / sum(cc2$treat==1 & cc2$hs==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]) / sum(cc2$treat==0 & cc2$hs==1)
+                    )
+                )
+tes.ns[3,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]),
+                sum(cc2$treat==1 & cc2$ltcoll==1), sum(cc2$ltcoll==1),
+                sqrt(
+                    var(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) / sum(cc2$treat==1 & cc2$ltcoll==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]) / sum(cc2$treat==0 & cc2$ltcoll==1)
+                    )
+                )
+tes.ns[4,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]),
+                sum(cc2$treat==1 & cc2$college==1),
+                sum(cc2$college==1),
+                sqrt(
+                    var(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) / sum(cc2$treat==1 & cc2$college==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]) / sum(cc2$treat==0 & cc2$college==1)
+                    )
+                )
 
+colnames(tes.ns) <- c('lths', 'hs', 'ltcoll', 'college')
+rownames(tes.ns) <- c('te', 'n.trt', 'n.ctrl', 'se')
 round(tes.ns,2)
+```
+```{r}
+# Stratified analyses
+# alan's attempt
+treated <- cc2$treat==1
+lths <- cc2$lths==1
 
+tes.ns[1,] <- c(
+    mean(cc2$ppvtr.36[treated & lths]) - mean(cc2$ppvtr.36[!treated & lths]),
+    sum(treated & lths),
+    sum(lths),
+    sqrt(var(cc2$ppvtr.36[treated & lths]) / sum(treated & lths) + var(cc2$ppvtr[treated & lths] / sum(!treated & lths)))
 ```
 
 ### Section 19.7 -- Initial propensity score analysis
@@ -130,12 +171,13 @@ ps_fit_0 <- stan_glm(form0, family=binomial(link="logit"), data=cc2,
                      algorithm="optimizing")
 pscores0_full <- apply(posterior_linpred(ps_fit_0_full, type="link"), 2, mean)
 pscores0 <- apply(posterior_linpred(ps_fit_0, type="link"), 2, mean)
-cor(pscores0_full,pscores0)
+cor(pscores0_full, pscores0)
 # without stan
 ps_fit_0b <- glm(form0, family=binomial(link="logit"), data=cc2)
 pscores0b <- predict(ps_fit_0b, type="link")
 #
-#cor(pscores0_full,pscores0,pscores0b)
+cor(pscores0_full, pscores0b)
+cor(pscores0, pscores0b)
 ```
 
 ### Step 3:  Use the propensity scores to match
@@ -262,8 +304,6 @@ In the chapter we'll also caution against relying too heavily on the propensity 
 This results in better balance but ignores all the state indicators which is weird.
 
 ```{r}
-library("rstan")
-library("rstanarm")
 # this one works well but isn't really justified
 #form1_nj <- treat ~ as.factor(educ) + as.factor(ethnic) + b.marr  +
 # work.dur + prenatal + momage + sex + first + preterm + age +
