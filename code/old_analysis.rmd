@@ -195,25 +195,26 @@ tes.ns[1,] <-  c(
 	mean(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]),
 	sum(cc2$treat==1 & cc2$lths==1),
 	sum(cc2$lths==1),
-	var(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) / sum(cc2$treat==1 & cc2$lths==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1] / sum(cc2$treat==0 & cc2$lths==1))
+	var(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) / sum(cc2$treat==1 & cc2$lths==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]) / sum(cc2$treat==0 & cc2$lths==1)
 	)
 tes.ns[2,] <- c(
 	mean(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]),
 	sum(cc2$treat==1 & cc2$hs==1),
 	sum(cc2$hs==1),
-	var(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) / sum(cc2$treat==1 & cc2$hs==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1] / sum(cc2$treat==0 & cc2$hs==1))
+	var(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) / sum(cc2$treat==1 & cc2$hs==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]) / sum(cc2$treat==0 & cc2$hs==1)
 	)
 tes.ns[3,] <- c(
 	mean(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]),
 	sum(cc2$treat==1 & cc2$ltcoll==1),
 	sum(cc2$ltcoll==1),
-	var(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) / sum(cc2$treat==1 & cc2$ltcoll==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1] / sum(cc2$treat==0 & cc2$ltcoll==1))
+	var(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) / sum(cc2$treat==1 & cc2$ltcoll==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]) / sum(cc2$treat==0 & cc2$ltcoll==1)
 	)
 tes.ns[4,] <- c(
 	mean(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]),
 	sum(cc2$treat==1 & cc2$college==1),
 	sum(cc2$college==1),
-	var(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) / sum(cc2$treat==1 & cc2$college==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1] / sum(cc2$treat==0 & cc2$college==1)))
+	var(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) / sum(cc2$treat==1 & cc2$college==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]) / sum(cc2$treat==0 & cc2$college==1)
+    )
 
 temp <- tes.ns
 rownames(temp) <- c('lths', 'hs', 'ltcoll', 'college')
