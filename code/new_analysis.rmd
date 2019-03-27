@@ -24,7 +24,7 @@ source("functions/new/balance.R")
 source("functions/new/estimation.R")
 library(dbarts)
 library(rstan)
-    options(mc.cores = parallel::detectCores())
+    options(mc.cores=parallel::detectCores())
 library(rstanarm)
 library(arm)
 ```
@@ -145,19 +145,6 @@ rownames(tes.ns) <- c('lths', 'hs', 'ltcoll', 'college')
 colnames(tes.ns) <- c('te', 'n.trt', 'n.ctrl', 'se')
 round(tes.ns,2)
 ```
-```{r}
-# Stratified analyses
-# alan's attempt
-treated <- cc2$treat==1
-lths <- cc2$lths==1
-
-tes.ns[1,] <- c(
-    mean(cc2$ppvtr.36[treated & lths]) - mean(cc2$ppvtr.36[!treated & lths]),
-    sum(treated & lths),
-    sum(lths),
-    sqrt(var(cc2$ppvtr.36[treated & lths]) / sum(treated & lths) + var(cc2$ppvtr[!treated & lths]) / sum(!treated & lths))
-    )
-```
 
 ### Section 19.7 -- Initial propensity score analysis
 Given that we get the same answers from rstanarm and glm but glm runs in a much shorter period of time then I would vote for glm here.
@@ -262,13 +249,13 @@ plot(bal0.wr, which.covs="cont", x.max=4)
 ```{r}
 # Plot the overlapping histograms for pscore1b, density
 hist(pscores1b[cc2$treat==0], xlim=c(-26,6), ylim=c(0,.22),
-     main="", border="darkgrey", breaks=seq(-26,6,by=1), 
+     main="", border="darkgrey", breaks=seq(-26,6,by=1),
      mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
 hist(pscores1b[cc2$treat==1], freq=FALSE, add=TRUE)
 
 # Plot the overlapping histograms for pscore1b, frequency
 hist(pscores1b[cc2$treat==0], xlim=c(-26,6), ylim=c(0,620),
-     main="", border="darkgrey", breaks=seq(-26,6,by=1), 
+     main="", border="darkgrey", breaks=seq(-26,6,by=1),
      mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
 hist(pscores1b[cc2$treat==1], freq=TRUE, add=TRUE)
 
@@ -285,13 +272,13 @@ pscores3 <- predict(ps3.mod, type="link")
 
 # Plot the overlapping histograms for pscore1b, density
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,8),
-     main="", border="darkgrey", 
+     main="", border="darkgrey",
      mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
 hist(pscores3[cc2$treat==1], freq=FALSE, add=TRUE)
 
 # Plot the overlapping histograms for pscore1b, frequency
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,1300),
-     main="", border="darkgrey", 
+     main="", border="darkgrey",
      mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
 hist(pscores3[cc2$treat==1], freq=TRUE, add=TRUE)
 

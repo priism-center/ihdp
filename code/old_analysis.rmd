@@ -188,7 +188,6 @@ curve(tmp[1]+tmp[3]+tmp[2]*x, add=T)
 ## Figure 10.6
 
 matches text
-
 ```{r}
 tes.ns=matrix(0,4,4)
 tes.ns[1,] <-  c(
@@ -278,6 +277,118 @@ c(tes.ns2[,1]) %*% tes.ns2[,3] / sum(tes.ns2[,3])
 
 # P-Score Matchinng
 
+ps.fit1 from text
+```{r}
+covs <- c("bw","bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","momage","sex","first","preterm","age","dayskidh" )
+
+# spec from text
+ps.fit.1 <- glm (treat ~ as.factor(educ) + as.factor(ethnic) +
+                b.marr + work.dur + prenatal + momage + sex +
+                first + preterm + age + dayskidh + bw + unemp.rt,
+                data=cc2, family=binomial(link="logit"))
+ps.fit.1 <- glm (treat ~ bwg + as.factor(educ) + bwg:as.factor(educ) + as.factor(ethnic) +
+                b.marr + as.factor(ethnic):b.marr + work.dur + prenatal + preterm + age +
+                momage + sex + first,
+                data=cc2, family=binomial(link="logit"))
+pscores1 <- ps.fit.1$linear
+# matching w/o replacemennt
+matches1 <- matching(z=cc2$treat, score=pscores1)
+matched1 <- cc2[matches1$matched,]
+ps1.mat <- pscores1[matches1$matched]
+
+sum(pscores1[cc2$treat==1] > max(pscores1[cc2$treat==0]))
+
+reg.st.ps <- lm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + 
+                  work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + 
+                  bw + unemp.rt + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53,
+                  data=matched2)
+round(summary(reg.st.ps)$coef[2,], digits=2)
+# 10.3 (2.26)
+########
+
+diff.means.matched1=matrix(0, length(covs2), 6)
+for (i in 1:length(covs2)) {
+  diff.means.matched1[i,1:2] <- c(
+    mean(matched1[matched1$treat==1,covs2[i]]),
+    mean(matched1[matched1$treat==0,covs2[i]])
+    )
+  diff.means.matched1[i,3] <- diff.means.matched1[i,1] - diff.means.matched1[i,2]
+  # note in next we still divide it by the standard deviation from full dataset
+  diff.means.matched1[i,5] <- sqrt(var(matched1[matched1$treat==1, covs2[i]]) / sum(cc2$treat==1) + var(cc2[cc2$treat==0, covs2[i]]) / sum(cc2$treat==0))
+  diff.means.matched1[i,6] <- sqrt((var(cc2[cc2$treat==1,covs2[i]]) + var(cc2[cc2$treat==0,covs2[i]])) / 2)
+  diff.means.matched1[i,4] <- diff.means.matched1[i,3] / diff.means.matched1[i,6]
+}
+dimnames(diff.means.matched1) <- list(covs2,c("treat","control","diff","diff.std","se","sd"))
+round(diff.means.matched1, 2)
+
+covs2C <- c("neg.bw","preterm","dayskidh","age","momage") 
+
+ratio.sds1=matrix(0, length(covs2C), 2)
+for (i in 1:length(covs2C)) {
+  ratio.sds1[i,1] <- c(
+    sd(cc2[cc2$treat==1,covs2C[i]]) / sd(cc2[cc2$treat==0,
+        covs2C[i]])
+    )
+  ratio.sds1[i,2] <- c(
+    sd(matched1[matched1$treat==1,covs2C[i]]) / sd(matched1[matched1$treat==0,
+        covs2C[i]])
+    )
+}
+dimnames(ratio.sds1) <- list(covs2C, c("unmatched ratio","matched ratio"))
+round(ratio.sds1, 2)
+
+
+# but we won't use this in the paper -- will use the version in which the pscores
+# also had the state indicators
+reg.ps <- lm (ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll +
+                work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw,
+                data=matched1)
+round(summary(reg.ps)$coef[2,], digits=2)
+# 10.3 (2.26)
+########
+
+name=cov.nms
+est=diff.means[,3]
+sd=diff.means[,6]
+est2=diff.means.matched1[,3]
+sd2=diff.means.matched1[,6]
+
+J <- 20
+#  data.locations = c(1.8,2.8,3.8,4.8,5.8,6.8,9:19)
+data.locations = c(1.8,2.8,3.8,4.8,5.8,6.8, 8.9,9.9,10.9,12.2,13.5,14.5,15.5,16.5,17.9,18.9,19.9)
+name.range <- .8
+x.range <- range (c(est,est2)/c(sd,sd2))
+x.range[2] <- x.range[2] +.3
+A <- -x.range[1]/(x.range[2]-x.range[1])
+B <- 1/(x.range[2]-x.range[1])
+height <- .35*J
+width <- 3*(name.range+1)
+#
+
+par(mar=c(0,0,0,0))
+plot(c(-name.range,1), c(3,-J-2), bty="n", xlab="", ylab="",
+      xaxt="n", yaxt="n", xaxs="i", yaxs="i", type="n")
+text(-name.range, 2, "Predictor", adj=0, cex=1)
+text(.5, 2, "Standardized Difference in Means", adj=.5, cex=1)
+lines(c(0,1), c(0,0))
+lines(c(A,A), c(0,-J-1), lty=2, lwd=.5)
+ax <- pretty (x.range)
+ax <- ax[(A+B*ax)>0 & (A+B*ax)<1]
+segments(A + B*ax, -.1, A + B*ax, .1, lwd=.5)
+text(A + B*ax, .7, ax, cex=1)
+text(-name.range, -.9, "Child", adj=0, cex=1)
+text(-name.range, -8, "Mother", adj=0, cex=1)
+text(-name.range+.05, -data.locations, name, adj=0, cex=1)
+points(A + B*(est/sd), -data.locations)
+points(A + B*(est2/sd2), -data.locations, pch=20, cex=1.5)
+#  if (bottom){
+#    lines (c(0,1), c(-J-1,-J-1))
+#    segments (A + B*ax, -J-1-.1, A + B*ax, -J-1+.1, lwd=.5)
+#    text (A + B*ax, -J-1-.7, ax, cex=1)
+#  }
+dev.off()
+```
+
 ```{r}
 covs <- c("bw","bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","momage","sex","first","preterm","age","dayskidh" )
 
@@ -286,7 +397,6 @@ covs <- c("bw","bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","c
 
 ### transformed variables now created at top of file
 
-# spec from text
 ps.fit.2 <- glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr +
                  work.dur + prenatal + preterm + age + momage + sex + 
                  first + bw + dayskidT + preterm + pretermT + momage + 
