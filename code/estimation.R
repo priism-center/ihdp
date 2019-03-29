@@ -95,4 +95,4 @@ robust_se <- function(model){
   return(v)
 }
 
-invlogit
+arm::invlogit
