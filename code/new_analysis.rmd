@@ -39,7 +39,6 @@ load("data/cc2.Rdata")
 covs.bin <- c("bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
 # above is good for balance checks but will lead to linear dependencies to avoid use this version (nr = no redundancy)
 
-# no race
 covs.bin.nr <- c("bwg","hispanic","black","b.marr","lths","hs","ltcoll","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
 
 #covs.cont <- c("bw","momage","preterm","age","dayskidh")
@@ -218,8 +217,7 @@ sum(bal0b.wr$diff.means.matched[,4])
 
 ## DOES IT MAKE SENSE AT THIS POINT TO COMPARE BALANCE BETWEEN THE MATCHING METHODS AND THE ESTIMATION METHODS??
 
-## SOMEWHERE TALK ABOUT HOW THE STANDARDIZATION DIFFERS DEPENDING ON THE 
-## ESTIMAND
+## SOMEWHERE TALK ABOUT HOW THE STANDARDIZATION DIFFERS DEPENDING ON THE ESTIMAND
 
 While in general we prefer visual summaries of our data, including for model fit and diagnostics, one downside to this display is that it displays standardized differences in means for binary variables which may not be the best option.  Since the variance of a binary variable is a function of the mean this means that these differences in means across groups are being standardized differentially based on how close the mean in each group is to .5, which does not seem appropriate.  For this reason common advice is to examine different balance diagnostics for continuous and binary variables.
 
