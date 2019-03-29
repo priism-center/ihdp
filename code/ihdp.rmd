@@ -1,0 +1,193 @@
+---
+title: IHDP analyses for Ch. 19 of GHV book
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        theme: lumen
+        highlight: zenburn
+        df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r library functions}
+library(dbarts)
+library(rstan)
+    options(mc.cores=parallel::detectCores())
+library(rstanarm)
+library(arm)
+source('code/matching.R')
+source('code/balance.R')
+source('code/estimation.R')
+```
+
+
+# Reading in the data
+Loading the data like this will create a dataframe called cc2.  It will be helpful later if we choose indicator versions of categorical variables and if we create separate indices for binary and continuous variables, so we'll create those now.
+```{r data}
+load("data/cc2.Rdata")
+trt <- cc2$treat==1
+```
+
+
+# Step 1: Picking confounders {.tabset .tabset-fade}
+
+- income is technically post treatment
+- st99 also problematic since only appears in the control group
+
+```{r}
+covs.bin <- c("bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
+# above is good for balance checks but will lead to linear dependencies to avoid use this version (nr = no redundancy)
+covs.bin.nr <- c("bwg","hispanic","black","b.marr","lths","hs","ltcoll","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
+covs.cont <- c("bw","preterm","momage","dayskidh")
+```
+
+## Initial set
+```{r}
+covs <- c(covs.cont, covs.bin)
+print(covs)
+```
+
+## No redundancy
+```{r}
+covs.nr <- c(covs.cont, covs.bin.nr)
+print(covs.nr)
+```
+
+
+# Step 2: Propensity score estimation {.tabset .tabset-fade}
+
+## Initial set
+```{r}
+form0 <- as.formula(cc2[, c("treat", covs)])
+# stan
+ps_fit_0 <- stan_glm(form0, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+pscores0 <- apply(posterior_linpred(ps_fit_0, type='link'), 2, mean)
+# base
+ps_fit_0b <- glm(form0, family=binomial(link='logit'), data=cc2)
+pscores0b <- predict(ps_fit_0b, type='link')
+
+cor(pscores0, pscores0b)
+```
+
+## No redundancy
+```{r}
+form1 <- as.formula(cc2[, c("treat", covs.nr)])
+# stan
+ps_fit_1 <- stan_glm(form1, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+pscores1 <- apply(posterior_linpred(ps_fit_1, type='link'), 2, mean)
+# base
+ps_fit_1b <- glm(form1, family=binomial(link='logit'), data=cc2)
+pscores1b <- predict(ps_fit_1b, type='link')
+
+cor(pscores1, pscores1b)
+```
+
+
+# Step 3: Use the propensity score to match {.tabset .tabset-fade}
+
+## Initial set
+```{r}
+# w/o replacement
+matches0 <- matching(z=cc2$treat, score=pscores0, replace=FALSE)
+matches0b <- matching(z=cc2$treat, score=pscores0b, replace=FALSE)
+
+# w/ replacement
+matches0.wr <- matching(z=cc2$treat, score=pscores0, replace=TRUE)
+matches0b.wr <- matching(z=cc2$treat, score=pscores0b, replace=TRUE)
+```
+
+## No redundancy
+```{r}
+# w/o replacement
+matches1 <- matching(z=cc2$treat, score=pscores1, replace=FALSE)
+matches1b <- matching(z=cc2$treat, score=pscores1b, replace=FALSE)
+
+# w/ replacement
+matches1.wr <- matching(z=cc2$treat, score=pscores1, replace=TRUE)
+matches1b.wr <- matching(z=cc2$treat, score=pscores1b, replace=TRUE)
+```
+
+
+# Step 4: Checking balance and overlap {.tabset .tabset-fade}
+
+## Initial set
+
+**Balance**
+```{r}
+# w/o replacemennt
+par(mfrow=c(1,1))
+bal0 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches0$cnts, estimand="ATT")
+plot(bal0)
+bal0b <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches0b$cnts, estimand="ATT")
+plot(bal0b)
+
+# w/ replacement
+bal0.wr <- balance(rawdata=cc2[,covs],treat=cc2$treat,matched=matches0.wr$cnts,estimand="ATT")
+plot(bal0.wr)
+bal0b.wr <- balance(rawdata=cc2[,covs],cc2$treat,matched=matches0b.wr$cnts,estimand="ATT")
+plot(bal0b.wr)
+```
+
+**Overlap**
+```{r}
+# Plot the overlapping histograms for pscore0b, density
+hist(pscores0b[cc2$treat==0],
+    xlim=c(-67,10), ylim=c(0,.22),
+     main="", border="darkgrey", breaks=seq(-67,10,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+hist(pscores0b[cc2$treat==1], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore0b, frequency
+hist(pscores0b[cc2$treat==0],
+    xlim=c(-67,10), ylim=c(0,300),
+     main="", border="darkgrey", breaks=seq(-67,10,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+hist(pscores0b[cc2$treat==1], freq=TRUE, add=TRUE)
+```
+
+## No redundancy
+
+**Balance**
+```{r}
+# w/o replacemennt
+par(mfrow=c(1,1))
+bal1 <- balance(rawdata=cc2[,covs.nr], cc2$treat, matched=matches1$cnts, estimand="ATT")
+plot(bal0)
+bal1b <- balance(rawdata=cc2[,covs.nr], cc2$treat, matched=matches1b$cnts, estimand="ATT")
+plot(bal1b)
+
+# w/ replacement
+bal1.wr <- balance(rawdata=cc2[,covs.nr], treat=cc2$treat, matched=matches1.wr$cnts, estimand="ATT")
+plot(bal0.wr)
+bal1b.wr <- balance(rawdata=cc2[,covs.nr], cc2$treat, matched=matches1b.wr$cnts, estimand="ATT")
+plot(bal1b.wr)
+```
+
+**Overlap**
+```{r}
+# Plot the overlapping histograms for pscore1b, density
+hist(pscores1b[cc2$treat==0],
+    xlim=c(-67,10), ylim=c(0,.22),
+     main="", border="darkgrey", breaks=seq(-67,10,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+hist(pscores1b[cc2$treat==1], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore1b, frequency
+hist(pscores1b[cc2$treat==0],
+    xlim=c(-67,10), ylim=c(0,300),
+     main="", border="darkgrey", breaks=seq(-67,10,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+hist(pscores1b[cc2$treat==1], freq=TRUE, add=TRUE)
+```
+
+
+# Step 5: Estimate the treatment effect on re-structured data {.tabset .tabset-fade}
