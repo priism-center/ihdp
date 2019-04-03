@@ -1,0 +1,552 @@
+---
+title: IHDP analyses for Ch. 19 of GHV book
+output:
+    html_document:
+        toc: true
+        toc_float:
+            collapsed: false
+        theme: lumen
+        highlight: zenburn
+        df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r library functions}
+library(dbarts)
+library(rstan)
+    options(mc.cores=parallel::detectCores())
+library(rstanarm)
+library(arm)
+library(kableExtra)
+source('code/matching.R')
+source('code/balance.R')
+source('code/estimation.R')
+```
+
+********************************************
+# Reading in the data
+Loading the data like this will create a dataframe called cc2.  It will be helpful later if we choose indicator versions of categorical variables and if we create separate indices for binary and continuous variables, so we'll create those now.
+
+```{r data}
+load("data/cc2.Rdata")
+trt <- cc2$treat==1
+```
+
+
+********************************************
+# Step 1: Picking confounders {.tabset .tabset-fade}
+
+- income is technically post treatment
+- st99 also problematic since only appears in the control group
+
+```{r}
+covs.bin <- c("bwg","hispanic","black","white","b.marr","lths","hs","ltcoll","college","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
+# above is good for balance checks but will lead to linear dependencies to avoid use this version (nr = no redundancy)
+covs.bin.nr <- c("bwg","hispanic","black","b.marr","lths","hs","ltcoll","work.dur","prenatal","sex","first","st5","st9","st12","st25","st36","st42","st48","st53")
+covs.cont <- c("bw","preterm","momage","dayskidh")
+```
+
+## Initial set
+```{r}
+covs <- c(covs.cont, covs.bin)
+print(covs)
+```
+
+## No redundancy
+```{r}
+covs.nr <- c(covs.cont, covs.bin.nr)
+print(covs.nr)
+```
+
+## No states
+This is the same as the no redundancy covariates, but also excluding states
+```{r}
+covs.states <-  c('st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st48', 'st53')
+covs.nst <- setdiff(covs.nr, covs.states)
+print(covs.nst)
+```
+
+## Child age
+This is the same as the nno redundancy covariates, but including child age
+```{r}
+covs.age <- c(covs.nr, 'age')
+print(covs.age)
+```
+
+********************************************
+# Step 2: Propensity score estimation {.tabset .tabset-fade}
+
+Fit propensity score models using both optimized `stanglm` and base `glm`
+
+## Initial set
+```{r}
+form0 <- as.formula(cc2[, c("treat", covs)])
+# stan
+ps_fit_0 <- stan_glm(form0, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+pscores0 <- apply(posterior_linpred(ps_fit_0, type='link'), 2, mean)
+# base
+ps_fit_0b <- glm(form0, family=binomial(link='logit'), data=cc2)
+pscores0b <- predict(ps_fit_0b, type='link')
+```
+
+Correlation between Stan & glm p-scores: `r round(cor(pscores0, pscores0b), 2)`.
+
+## No redundancy
+```{r}
+form1 <- as.formula(cc2[, c("treat", covs.nr)])
+# stan
+ps_fit_1 <- stan_glm(form1, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+pscores1 <- apply(posterior_linpred(ps_fit_1, type='link'), 2, mean)
+# base
+ps_fit_1b <- glm(form1, family=binomial(link='logit'), data=cc2)
+pscores1b <- predict(ps_fit_1b, type='link')
+```
+
+Correlation between Stan & glm p-scores: `r round(cor(pscores1, pscores1b), 2)`.
+
+## No states
+```{r}
+form.nst <- as.formula(cc2[, c('treat', covs.nst)])
+# stan
+ps_fit.nst <- stan_glm(form.nst, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+pscores.nst <- apply(posterior_linpred(ps_fit.nst, type='link'), 2, mean)
+# base
+ps_fit.nstb <- glm(form.nst, family=binomial(link='logit'), data=cc2)
+pscores.nstb <- predict(ps_fit.nstb, type='link')
+```
+
+Correlation between Stan & glm p-scores: `r round(cor(pscores.nst, pscores.nstb), 2)`.
+
+Since correlation is `r round(cor(pscores.nst, pscores.nstb), 2)`, we'll just go with `stanglm` p-scores with the no-state covariates.
+
+## Child age
+```{r}
+form.age <- as.formula(cc2[, c('treat', covs.age)])
+# stan
+ps_fit.age <- stan_glm(form.age, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+pscores.age <- apply(posterior_linpred(ps_fit.age, type='link'), 2, mean)
+# base
+ps_fit.ageb <- glm(form.age, family=binomial(link='logit'), data=cc2)
+pscores.ageb <- predict(ps_fit.ageb, type='link')
+```
+
+Correlation between Stan & glm p-scores: `r round(cor(pscores.age, pscores.ageb), 2)`.
+
+
+********************************************
+# Step 3: Use the propensity score to match {.tabset .tabset-fade}
+
+## Initial set
+```{r}
+# w/o replacement
+matches0 <- matching(z=cc2$treat, score=pscores0, replace=FALSE)
+matches0b <- matching(z=cc2$treat, score=pscores0b, replace=FALSE)
+# w/ replacement
+matches0.wr <- matching(z=cc2$treat, score=pscores0, replace=TRUE)
+matches0b.wr <- matching(z=cc2$treat, score=pscores0b, replace=TRUE)
+```
+
+## No redundancy
+```{r}
+# w/o replacement
+matches1 <- matching(z=cc2$treat, score=pscores1, replace=FALSE)
+matches1b <- matching(z=cc2$treat, score=pscores1b, replace=FALSE)
+# w/ replacement
+matches1.wr <- matching(z=cc2$treat, score=pscores1, replace=TRUE)
+matches1b.wr <- matching(z=cc2$treat, score=pscores1b, replace=TRUE)
+```
+
+## No states
+```{r}
+# w/o replacement
+matches.nst <- matching(z=cc2$treat, score=pscores.nst, replace=FALSE)
+# w/ replacement
+matches.nst.wr <- matching(z=cc2$treat, score=pscores.nst, replace=TRUE)
+```
+
+## Child age
+```{r}
+# w/o replacement
+matches.age <- matching(z=cc2$treat, score=pscores.age, replace=FALSE)
+matches.ageb <- matching(z=cc2$treat, score=pscores.ageb, replace=FALSE)
+# w/ replacement
+matches.age.wr <- matching(z=cc2$treat, score=pscores.age, replace=TRUE)
+matches.ageb.wr <- matching(z=cc2$treat, score=pscores.ageb, replace=TRUE)
+```
+
+
+********************************************
+# Step 4: Checking balance and overlap
+
+## Balance {.tabset .tabset-fade}
+
+### Initial set (stan) MwoR
+```{r, collapse=TRUE, echo=FALSE}
+bal0 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches0$cnts, estimand="ATT")
+plot(bal0)
+```
+### Initial set (stan) MwR
+```{r, collapse=TRUE, echo=FALSE}
+bal0.wr <- balance(rawdata=cc2[,covs],treat=cc2$treat,matched=matches0.wr$cnts,estimand="ATT")
+plot(bal0.wr)
+```
+
+### No redundancy (stan) MwoR
+```{r, collapse=TRUE, echo=FALSE}
+par(mfrow=c(1,1))
+bal1 <- balance(rawdata=cc2[,covs.nr], cc2$treat, matched=matches1$cnts, estimand="ATT")
+plot(bal1)
+```
+### No redundancy (stan) MwR
+```{r, collapse=TRUE, echo=FALSE}
+bal1.wr <- balance(rawdata=cc2[,covs.nr], cc2$treat, matched=matches1.wr$cnts, estimand="ATT")
+plot(bal1.wr)
+```
+
+### No states (stan) MwoR
+```{r, collapse=TRUE, echo=FALSE}
+bal.nst <- balance(rawdata=cc2[,covs.nst], cc2$treat, matched=matches.nst$cnts, estimand='ATT')
+plot(bal.nst)
+```
+### No states (stan) MwR
+```{r, collapse=TRUE, echo=FALSE}
+bal.nst.wr <- balance(rawdata=cc2[,covs.nst], cc2$treat, matched=matches.nst.wr$cnts, estimand='ATT')
+plot(bal.nst.wr)
+```
+
+### Child age (stan) MwoR
+```{r, collapse=TRUE, echo=FALSE}
+bal.age <- balance(rawdata=cc2[,covs.age], cc2$treat, matched=matches.age$cnts, estimand='ATT')
+plot(bal.age)
+```
+### Child age (stan) MwR
+```{r, collapse=TRUE, echo=FALSE}
+bal.age.wr <- balance(rawdata=cc2[,covs.age], cc2$treat, matched=matches.age.wr$cnts, estimand='ATT')
+plot(bal.age.wr)
+```
+
+### Initial set (glm) MwoR
+```{r, collapse=TRUE, echo=FALSE}
+bal0b <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches0b$cnts, estimand="ATT")
+plot(bal0b)
+```
+### Initial set (glm) MwR
+```{r, collapse=TRUE, echo=FALSE}
+bal0b.wr <- balance(rawdata=cc2[,covs],cc2$treat,matched=matches0b.wr$cnts,estimand="ATT")
+plot(bal0b.wr)
+```
+
+### No redundancy (glm) MwoR
+```{r, collapse=TRUE, echo=FALSE}
+bal1b <- balance(rawdata=cc2[,covs.nr], cc2$treat, matched=matches1b$cnts, estimand="ATT")
+plot(bal1b)
+```
+### No redundancy (glm) MwR
+```{r, collapse=TRUE, echo=FALSE}
+bal1b.wr <- balance(rawdata=cc2[,covs.nr], cc2$treat, matched=matches1b.wr$cnts, estimand="ATT")
+plot(bal1b.wr)
+```
+
+### Child age (glm) MwoR
+```{r, collapse=TRUE, echo=FALSE}
+bal.ageb <- balance(rawdata=cc2[,covs.age], cc2$treat, matched=matches.ageb$cnts, estimand='ATT')
+plot(bal.ageb)
+```
+### Child age (glm) MwR
+```{r, collapse=TRUE, echo=FALSE}
+bal.ageb.wr <- balance(rawdata=cc2[,covs.age], cc2$treat, matched=matches.ageb.wr$cnts, estimand='ATT')
+plot(bal.ageb.wr)
+```
+
+
+## Overlap {.tabset .tabset-fade}
+
+### Initial set (glm)
+```{r, echo=FALSE}
+# Plot the overlapping histograms for pscore0b, density
+par(mfrow=c(2,1))
+hist(pscores0b[cc2$treat==0],
+    xlim=c(-67,10), ylim=c(0,.22),
+     main="", border="darkgrey", breaks=seq(-67,10,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+hist(pscores0b[cc2$treat==1], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore0b, frequency
+hist(pscores0b[cc2$treat==0],
+    xlim=c(-67,10), ylim=c(0,300),
+     main="", border="darkgrey", breaks=seq(-67,10,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+hist(pscores0b[cc2$treat==1], freq=TRUE, add=TRUE)
+```
+### Initial set (stan)
+```{r, echo=FALSE}
+par(mfrow=c(2,1))
+# Plot the overlapping histograms for pscore0, density
+hist(pscores0[cc2$treat==0],
+    xlim=c(-41,18), ylim=c(0,.22),
+     main="", border="darkgrey", breaks=seq(-41,8,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+hist(pscores0[cc2$treat==1], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore0, frequency
+hist(pscores0[cc2$treat==0],
+    xlim=c(-41,8), ylim=c(0,350),
+     main="", border="darkgrey", breaks=seq(-41,8,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+hist(pscores0[cc2$treat==1], freq=TRUE, add=TRUE)
+```
+
+### No redundancy (glm)
+```{r, echo=FALSE}
+par(mfrow=c(2,1))
+# Plot the overlapping histograms for pscore1b, density
+hist(pscores1b[cc2$treat==0],
+    xlim=c(-67,10), ylim=c(0,.22),
+     main="", border="darkgrey", breaks=seq(-67,10,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+hist(pscores1b[cc2$treat==1], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore1b, frequency
+hist(pscores1b[cc2$treat==0],
+    xlim=c(-67,10), ylim=c(0,300),
+     main="", border="darkgrey", breaks=seq(-67,10,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+hist(pscores1b[cc2$treat==1], freq=TRUE, add=TRUE)
+```
+### No redundancy (stan)
+```{r, echo=FALSE}
+par(mfrow=c(2,1))
+# Plot the overlapping histograms for pscore1, density
+hist(pscores1[cc2$treat==0],
+    xlim=c(-41,8), ylim=c(0,.25),
+     main="", border="darkgrey", breaks=seq(-41,8,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+hist(pscores1[cc2$treat==1], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore1, frequency
+hist(pscores1[cc2$treat==0],
+    xlim=c(-41,8), ylim=c(0,350),
+     main="", border="darkgrey", breaks=seq(-41,8,by=1),
+     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+hist(pscores1[cc2$treat==1], freq=TRUE, add=TRUE)
+```
+### No states (stan)
+```{r, echo=FALSE}
+par(mfrow=c(2,1))
+# Plot the overlapping histograms for pscore.nst, density
+hist(pscores.nst[!trt],
+    xlim=c(-33,6), ylim=c(0,.25),
+    main='', border='darkgrey', breaks=seq(-33,6,1),
+    mgp=c(2,.5,0), xlab='propensity scores', freq=FALSE)
+hist(pscores.nst[trt], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore.nst, frequency
+hist(pscores.nst[!trt],
+    xlim=c(-33,6), ylim=c(0,500),
+    main='', border='darkgrey', breaks=seq(-33,6,1),
+    mgp=c(2,.5,0), xlab='propensity scores', freq=TRUE)
+hist(pscores.nst[trt], freq=TRUE, add=TRUE)
+```
+
+### Child age (glm)
+```{r, echo=FALSE}
+par(mfrow=c(2,1))
+# Plot the overlapping histograms for pscore.nst, density
+hist(pscores.ageb[!trt],
+    xlim=c(-67,10), ylim=c(0,.25),
+    main='', border='darkgrey', breaks=seq(-67,10,1),
+    mgp=c(2,.5,0), xlab='propensity scores', freq=FALSE)
+hist(pscores.ageb[trt], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore.nst, frequency
+hist(pscores.ageb[!trt],
+    xlim=c(-67,10), ylim=c(0,500),
+    main='', border='darkgrey', breaks=seq(-67,10,1),
+    mgp=c(2,.5,0), xlab='propensity scores', freq=TRUE)
+hist(pscores.ageb[trt], freq=TRUE, add=TRUE)
+```
+### Child age (stan)
+```{r, echo=FALSE}
+par(mfrow=c(2,1))
+# Plot the overlapping histograms for pscore.nst, density
+hist(pscores.age[!trt],
+    xlim=c(-41,8), ylim=c(0,.25),
+    main='', border='darkgrey', breaks=seq(-41,8,1),
+    mgp=c(2,.5,0), xlab='propensity scores', freq=FALSE)
+hist(pscores.age[trt], freq=FALSE, add=TRUE)
+
+# Plot the overlapping histograms for pscore.nst, frequency
+hist(pscores.nst[!trt],
+    xlim=c(-41,8), ylim=c(0,500),
+    main='', border='darkgrey', breaks=seq(-41,8,1),
+    mgp=c(2,.5,0), xlab='propensity scores', freq=TRUE)
+hist(pscores.nst[trt], freq=TRUE, add=TRUE)
+```
+
+
+********************************************
+# Step 5: Estimate the treatment effect on re-structured data {.tabset .tabset-fade}
+
+The empirical treatment effect for the sample is 7.4.
+
+```{r}
+# common specification of the mean structure
+form.reg <- as.formula(cc2[,c('ppvtr.36', 'treat', covs)])
+form.reg1 <- as.formula(cc2[,c('ppvtr.36', 'treat', covs.nr)])
+form.reg.nst <- as.formula(cc2[,c('ppvtr.36', 'treat', covs.nst)])
+form.reg.age <- as.formula(cc2[,c('ppvtr.36', 'treat', covs.age)])
+```
+
+## Initial set (ignoring restructuring)
+```{r}
+mod.um <- glm(form.reg, data=cc2)
+round(summary(mod.um)$coef[2,], 2)
+```
+
+## Initial set (glm) (MwoR)
+```{r}
+mod0b <- glm(form.reg, data=cc2, weight=matches0b$cnts)
+round(summary(mod0b)$coef[2,], 2)
+```
+## Initial set (glm) (MwR)
+```{r}
+mod0b.wr <- glm(form.reg, data=cc2, weight=matches0b.wr$cnts)
+round(summary(mod0b.wr)$coef[2,], 2)
+```
+
+## Initial set (stan) (MworR)
+```{r}
+mod0 <- stan_glm(form.reg, data=cc2, weight=matches0$cnts, algorithm='optimizing')
+round(mod0$stan_summary['treat',], 2)
+```
+## Initial set (stan) (MwR)
+```{r}
+mod0.wr <- stan_glm(form.reg, data=cc2, weight=matches0.wr$cnts, algorithm='optimizing')
+round(mod0.wr$stan_summary['treat',], 2)
+```
+
+## No redundancy (glm) (MwoR)
+```{r}
+mod1b <- glm(form.reg1, data=cc2, weight=matches1b$cnts)
+round(summary(mod1b)$coef[2,], 2)
+```
+## No redundancy (glm) (MwR)
+```{r}
+mod1b.wr <- glm(form.reg1, data=cc2, weight=matches1b.wr$cnts)
+round(summary(mod1b.wr)$coef[2,], 2)
+```
+
+## No redundancy (stan) (MwoR)
+```{r}
+mod1 <- stan_glm(form.reg1, data=cc2, weight=matches1$cnts, algorithm='optimizing')
+round(mod1$stan_summary['treat',], 2)
+```
+## No redundancy (stan) (MwR)
+```{r}
+mod1.wr <- stan_glm(form.reg1, data=cc2, weight=matches1.wr$cnts, algorithm='optimizing')
+round(mod1.wr$stan_summary['treat',], 2)
+```
+
+## No states (stan) (MwoR)
+```{r}
+mod.nst <- stan_glm(form.reg.nst, data=cc2, weight=matches.nst$cnts, algorithm='optimizing')
+round(mod.nst$stan_summary['treat',], 2)
+```
+## No states (stan) (MwR)
+```{r}
+mod.nst.wr <- stan_glm(form.reg.nst, data=cc2, weight=matches.nst.wr$cnts, algorithm='optimizing')
+round(mod.nst.wr$stan_summary['treat',], 2)
+```
+
+## Child age (glm) (MwoR)
+```{r}
+mod.ageb <- glm(form.reg.age, data=cc2, weight=matches.ageb$cnts)
+round(summary(mod.ageb)$coef[2,], 2)
+```
+## Child age (glm) (MwR)
+```{r}
+mod.ageb.wr <- glm(form.reg.age, data=cc2, weight=matches.ageb.wr$cnts)
+round(summary(mod.ageb.wr)$coef[2,], 2)
+```
+
+## Child age (stan) (MwoR)
+```{r}
+mod.age <- stan_glm(form.reg.age, data=cc2, weight=matches.age$cnts, algorithm='optimizing')
+round(mod.age$stan_summary['treat',], 2)
+```
+## Child age (stan) (MwR)
+```{r}
+mod.age.wr <- stan_glm(form.reg.age, data=cc2, weight=matches.age.wr$cnts, algorithm='optimizing')
+round(mod.age.wr$stan_summary['treat',], 2)
+```
+
+********************************************
+# Treatement effect overview
+
+```{r te table, include=FALSE}
+model <- c('No restructuring',
+    'Initial glm',
+    'Initial glm wr',
+    'Initial stan',
+    'Initial stan wr',
+    'No redundancy glm',
+    'No redundancy glm wr',
+    'No redundancy stan',
+    'No redundancy stan wr',
+    'No states stan',
+    'No states stan wr',
+    'Child age glm',
+    'Child age glm wr',
+    'Child age stan',
+    'Child age stan wr'
+    )
+
+tes <- c(summary(mod.um)$coef[2,1],
+    summary(mod0b)$coef[2,1],
+    summary(mod0b.wr)$coef[2,1],
+    mod0$stan_summary['treat',1],
+    mod0.wr$stan_summary['treat',1],
+    summary(mod1b)$coef[2,1],
+    summary(mod1b.wr)$coef[2,1],
+    mod1$stan_summary['treat',1],
+    mod1.wr$stan_summary['treat',1],
+    mod.nst$stan_summary['treat',1],
+    mod.nst.wr$stan_summary['treat',1],
+    summary(mod.ageb)$coef[2,1],
+    summary(mod.ageb.wr)$coef[2,1],
+    mod.age$stan_summary['treat',1],
+    mod.age.wr$stan_summary['treat',1]
+)
+
+ses <- c(summary(mod.um)$coef[2,2],
+    summary(mod0b)$coef[2,2],
+    summary(mod0b.wr)$coef[2,2],
+    mod0$stan_summary['treat',2],
+    mod0.wr$stan_summary['treat',2],
+    summary(mod1b)$coef[2,2],
+    summary(mod1b.wr)$coef[2,2],
+    mod1$stan_summary['treat',2],
+    mod1.wr$stan_summary['treat',2],
+    mod.nst$stan_summary['treat',2],
+    mod.nst.wr$stan_summary['treat',2],
+    summary(mod.ageb)$coef[2,2],
+    summary(mod.ageb.wr)$coef[2,2],
+    mod.age$stan_summary['treat',2],
+    mod.age.wr$stan_summary['treat',2]
+    )
+
+te.table <- data.frame(spec=model, te=tes, se=ses)
+```
+
+```{r, echo=FALSE, rows.print=15}
+kable(te.table, digits=2) %>%
+    kable_styling(bootstrap_options=c("striped", "hover", 'responsive'), full_width=FALSE)
+```
