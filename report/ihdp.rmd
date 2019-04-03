@@ -272,13 +272,11 @@ plot(bal.ageb.wr)
 ### Initial set (glm)
 ```{r, echo=FALSE}
 # Plot the overlapping histograms for pscore0b, density
-par(mfrow=c(2,1))
 hist(pscores0b[cc2$treat==0],
     xlim=c(-67,10), ylim=c(0,.22),
      main="", border="darkgrey", breaks=seq(-67,10,by=1),
      mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
 hist(pscores0b[cc2$treat==1], freq=FALSE, add=TRUE)
-
 # Plot the overlapping histograms for pscore0b, frequency
 hist(pscores0b[cc2$treat==0],
     xlim=c(-67,10), ylim=c(0,300),
@@ -286,16 +284,15 @@ hist(pscores0b[cc2$treat==0],
      mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
 hist(pscores0b[cc2$treat==1], freq=TRUE, add=TRUE)
 ```
+
 ### Initial set (stan)
 ```{r, echo=FALSE}
-par(mfrow=c(2,1))
 # Plot the overlapping histograms for pscore0, density
 hist(pscores0[cc2$treat==0],
     xlim=c(-41,18), ylim=c(0,.22),
      main="", border="darkgrey", breaks=seq(-41,8,by=1),
      mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
 hist(pscores0[cc2$treat==1], freq=FALSE, add=TRUE)
-
 # Plot the overlapping histograms for pscore0, frequency
 hist(pscores0[cc2$treat==0],
     xlim=c(-41,8), ylim=c(0,350),
@@ -306,14 +303,12 @@ hist(pscores0[cc2$treat==1], freq=TRUE, add=TRUE)
 
 ### No redundancy (glm)
 ```{r, echo=FALSE}
-par(mfrow=c(2,1))
 # Plot the overlapping histograms for pscore1b, density
 hist(pscores1b[cc2$treat==0],
     xlim=c(-67,10), ylim=c(0,.22),
      main="", border="darkgrey", breaks=seq(-67,10,by=1),
      mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
 hist(pscores1b[cc2$treat==1], freq=FALSE, add=TRUE)
-
 # Plot the overlapping histograms for pscore1b, frequency
 hist(pscores1b[cc2$treat==0],
     xlim=c(-67,10), ylim=c(0,300),
@@ -321,16 +316,15 @@ hist(pscores1b[cc2$treat==0],
      mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
 hist(pscores1b[cc2$treat==1], freq=TRUE, add=TRUE)
 ```
+
 ### No redundancy (stan)
 ```{r, echo=FALSE}
-par(mfrow=c(2,1))
 # Plot the overlapping histograms for pscore1, density
 hist(pscores1[cc2$treat==0],
     xlim=c(-41,8), ylim=c(0,.25),
      main="", border="darkgrey", breaks=seq(-41,8,by=1),
      mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
 hist(pscores1[cc2$treat==1], freq=FALSE, add=TRUE)
-
 # Plot the overlapping histograms for pscore1, frequency
 hist(pscores1[cc2$treat==0],
     xlim=c(-41,8), ylim=c(0,350),
@@ -338,16 +332,15 @@ hist(pscores1[cc2$treat==0],
      mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
 hist(pscores1[cc2$treat==1], freq=TRUE, add=TRUE)
 ```
+
 ### No states (stan)
 ```{r, echo=FALSE}
-par(mfrow=c(2,1))
 # Plot the overlapping histograms for pscore.nst, density
 hist(pscores.nst[!trt],
     xlim=c(-33,6), ylim=c(0,.25),
     main='', border='darkgrey', breaks=seq(-33,6,1),
     mgp=c(2,.5,0), xlab='propensity scores', freq=FALSE)
 hist(pscores.nst[trt], freq=FALSE, add=TRUE)
-
 # Plot the overlapping histograms for pscore.nst, frequency
 hist(pscores.nst[!trt],
     xlim=c(-33,6), ylim=c(0,500),
@@ -358,14 +351,12 @@ hist(pscores.nst[trt], freq=TRUE, add=TRUE)
 
 ### Child age (glm)
 ```{r, echo=FALSE}
-par(mfrow=c(2,1))
 # Plot the overlapping histograms for pscore.nst, density
 hist(pscores.ageb[!trt],
     xlim=c(-67,10), ylim=c(0,.25),
     main='', border='darkgrey', breaks=seq(-67,10,1),
     mgp=c(2,.5,0), xlab='propensity scores', freq=FALSE)
 hist(pscores.ageb[trt], freq=FALSE, add=TRUE)
-
 # Plot the overlapping histograms for pscore.nst, frequency
 hist(pscores.ageb[!trt],
     xlim=c(-67,10), ylim=c(0,500),
@@ -373,16 +364,15 @@ hist(pscores.ageb[!trt],
     mgp=c(2,.5,0), xlab='propensity scores', freq=TRUE)
 hist(pscores.ageb[trt], freq=TRUE, add=TRUE)
 ```
+
 ### Child age (stan)
 ```{r, echo=FALSE}
-par(mfrow=c(2,1))
 # Plot the overlapping histograms for pscore.nst, density
 hist(pscores.age[!trt],
     xlim=c(-41,8), ylim=c(0,.25),
     main='', border='darkgrey', breaks=seq(-41,8,1),
     mgp=c(2,.5,0), xlab='propensity scores', freq=FALSE)
 hist(pscores.age[trt], freq=FALSE, add=TRUE)
-
 # Plot the overlapping histograms for pscore.nst, frequency
 hist(pscores.nst[!trt],
     xlim=c(-41,8), ylim=c(0,500),
