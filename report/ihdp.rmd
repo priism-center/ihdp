@@ -337,7 +337,7 @@ hist(pscores1[cc2$treat==1], freq=TRUE, add=TRUE)
 ```{r, echo=FALSE}
 # Plot the overlapping histograms for pscore.nst, density
 hist(pscores.nst[!trt],
-    xlim=c(-33,6), ylim=c(0,.25),
+    xlim=c(-33,6), ylim=c(0,.3),
     main='', border='darkgrey', breaks=seq(-33,6,1),
     mgp=c(2,.5,0), xlab='propensity scores', freq=FALSE)
 hist(pscores.nst[trt], freq=FALSE, add=TRUE)
@@ -353,7 +353,7 @@ hist(pscores.nst[trt], freq=TRUE, add=TRUE)
 ```{r, echo=FALSE}
 # Plot the overlapping histograms for pscore.nst, density
 hist(pscores.ageb[!trt],
-    xlim=c(-67,10), ylim=c(0,.25),
+    xlim=c(-67,10), ylim=c(0,.22),
     main='', border='darkgrey', breaks=seq(-67,10,1),
     mgp=c(2,.5,0), xlab='propensity scores', freq=FALSE)
 hist(pscores.ageb[trt], freq=FALSE, add=TRUE)
