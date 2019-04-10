@@ -1,0 +1,211 @@
+---
+title: GHV Ch. 20 Figures
+output:
+    html_document:
+        toc: true
+        toc_float: true
+        theme: journal
+        df_print: paged
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r library, include=FALSE}
+library(dbarts)
+library(rstan)
+    options(mc.cores=parallel::detectCores())
+library(rstanarm)
+library(arm)
+source('code/matching.R')
+source('code/balance.R')
+source('code/estimation.R')
+```
+
+```{r data, include=FALSE}
+load('data/cc2.Rdata')
+```
+
+
+# Figure 20.1
+
+# Figure 20.2
+
+# Figure 20.3
+
+
+# Figure 20.4
+Same as Figure 10.1 from GH. Two plots showing imbalance, but not any specific covariate, just arbitrary RV x.
+
+
+# Figure 20.5
+Same as Figure 10.2 from GH. Three plots showing one and two examples of no and partial overlap, respectively. Also not of any specific covariate, just an arbitrary RV.
+
+
+# Figure 20.6
+
+# Figure 20.7
+
+# Figure 20.8
+
+# Figure 20.9
+
+Balance plot with following covariates:
+
+Child:
+
+- neg.bw
+- preterm
+- dayskidh
+- sex
+- first
+- age
+
+Mother:
+
+- black
+- hispanic
+- white
+- b.marr
+- lths
+- hs
+- ltcoll
+- college
+- work.dur
+- prenatal
+- momage
+
+```{r}
+covs <- c('neg.bw', 'preterm', 'dayskidh', 'sex', 'first', 'age', 'black', 'hispanic', 'white', 'b.marr', 'lths', 'hs', 'ltcoll', 'college', 'work.dur', 'prenatal', 'momage')
+form_20.9 <- as.formula(cc2[, c("treat", covs)])
+ps_fit_20.9 <- stan_glm(form_20.9, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+pscores_20.9 <- apply(posterior_linpred(ps_fit_20.9, type='link'), 2, mean)
+matches_20.9 <- matching(z=cc2$treat, score=pscores_20.9, replace=FALSE)
+par(mfrow=c(1,1))
+bal_20.9 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches_20.9$cnts, estimand='ATT')
+plot(bal_20.9)
+```
+
+Doesn't match up exactly, also this function doesn't fix the issues with binary covariates
+
+# Figure 20.10
+
+```{r}
+# birthweight
+#postscript("ppvt.bw.ps", horizontal=T,height=3.6,width=4.2)
+par(mfrow=c(1,1))
+tmp <- lm(ppvtr.36 ~ bw + treat, data=cc2)$coef
+plot(cc2$bw, cc2$ppvtr.36,
+    xlab="birth weight", ylab="test score at age 3",
+    mgp=c(2,.5,0), main="", type="n", xlim=c(1500,5000), cex.axis=.75, cex.lab=.8, lab=c(3,5,7), xaxt="n")
+axis(side=1, at=c(2000, 3000, 4000, 5000), cex.axis=.75)
+points(cc2$bw[cc2$treat==0] + runif(sum(cc2$treat==0), -.5,5), cc2$ppvtr.36[cc2$treat==0],
+    col="darkgrey", pch=20, cex=.3)
+points(cc2$bw[cc2$treat==1] + runif(sum(cc2$treat==1), -.5,5), cc2$ppvtr.36[cc2$treat==1],
+    pch=20, cex=.3)
+curve(tmp[1]+tmp[2]*x, add=T, lty=2)
+curve(tmp[1]+tmp[3]+tmp[2]*x, add=T)
+#dev.off()
+```
+
+# Figure 20.11
+
+```{r}
+par(mfrow=c(1,2))
+# plot(x=seq(0,5,.1),y=seq(0,1800,(1800/50)),bty="n",xaxt="n",yaxt="n",mgp=c(2,.5,0),xlab="mother's education",ylab="frequency",type="n",main="")
+# axis(1, 1:4)
+# axis(2, c(0,1000,2000))
+hist(cc2$educ[cc2$treat==0],xlim=c(0,5),main="",border="darkgrey",breaks=c(.5,1.5,2.5,3.5,4.5),mgp=c(2,.5,0),xlab="mother's education",freq=FALSE)
+hist(cc2$educ[cc2$treat==1],xlim=c(0,5),xlab="education",breaks=c(.5,1.5,2.5,3.5,4.5),freq=FALSE,add=T)
+#
+hist(cc2$age[cc2$treat==0],xlim=c(0,110),main="",xlab="age of child (months)",border="darkgrey",breaks=seq(0,110,10),mgp=c(2,.5,0),ylim=c(0,.1),
+     freq=FALSE)
+hist(cc2$age[cc2$treat==1],xlim=c(0,110),xlab="",breaks=seq(0,110,10),freq=FALSE, add=T)
+```
+
+# Figure 20.12
+```{r}
+#Stratified analyses
+### CODE THIS MORE EFFICIENTLY!  use aggregate function?  or just one of the apply's?
+tes.ns <- matrix(0,4,4)
+tes.ns[1,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]), 
+                sum(cc2$treat==1 & cc2$lths==1),
+                sum(cc2$lths==1),
+                sqrt(
+                    var(cc2$ppvtr.36[cc2$treat==1 & cc2$lths==1]) / sum(cc2$treat==1 & cc2$lths==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$lths==1]) / sum(cc2$treat==0 & cc2$lths==1)
+                    )
+                )
+tes.ns[2,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]),
+                sum(cc2$treat==1 & cc2$hs==1),
+                sum(cc2$hs==1),
+                sqrt(
+                    var(cc2$ppvtr.36[cc2$treat==1 & cc2$hs==1]) / sum(cc2$treat==1 & cc2$hs==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$hs==1]) / sum(cc2$treat==0 & cc2$hs==1)
+                    )
+                )
+tes.ns[3,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]),
+                sum(cc2$treat==1 & cc2$ltcoll==1),
+                sum(cc2$ltcoll==1),
+                sqrt(
+                    var(cc2$ppvtr.36[cc2$treat==1 & cc2$ltcoll==1]) / sum(cc2$treat==1 & cc2$ltcoll==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$ltcoll==1]) / sum(cc2$treat==0 & cc2$ltcoll==1)
+                    )
+                )
+tes.ns[4,] <- c(mean(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) - mean(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]),
+                sum(cc2$treat==1 & cc2$college==1),
+                sum(cc2$college==1),
+                sqrt(
+                    var(cc2$ppvtr.36[cc2$treat==1 & cc2$college==1]) / sum(cc2$treat==1 & cc2$college==1) + var(cc2$ppvtr.36[cc2$treat==0 & cc2$college==1]) / sum(cc2$treat==0 & cc2$college==1)
+                    )
+                )
+
+rownames(tes.ns) <- c('lths', 'hs', 'ltcoll', 'college')
+colnames(tes.ns) <- c('te', 'n.trt', 'n.ctrl', 'se')
+round(tes.ns,2)
+```
+
+Apply function implementation
+
+```{r}
+edu <- list(cc2$lths, cc2$hs, cc2$ltcoll, cc2$college)
+
+# mean difference
+y.trt <- sapply(edu, FUN=function(x) {
+    tapply(cc2$ppvtr.36, list(cc2$treat, x), mean)[4]
+})
+y.ctrl <- sapply(edu, FUN=function(x) {
+    tapply(cc2$ppvtr.36, list(cc2$treat, x), mean)[3]
+})
+te <- y.trt - y.ctrl
+
+# sample sizes
+n.trt <- sapply(edu, FUN=function(x) {
+    tapply(rep(1, nrow(cc2)), list(cc2$treat, x), sum)[4]
+})
+n.ctrl <- sapply(edu, FUN=function(x) {
+    sum(tapply(rep(1, nrow(cc2)), list(cc2$treat, x), sum)[,2])
+})
+
+# std errors
+var.trt <- sapply(edu, FUN=function(x) {
+    tapply(cc2$ppvtr.36, list(cc2$treat, x), var)[4]
+})
+var.ctrl <- sapply(edu, FUN=function(x) {
+    tapply(cc2$ppvtr.36, list(cc2$treat, x), var)[3]
+})
+se <- sqrt(var.trt/n.trt + var.ctrl/n.ctrl)
+
+tes <- data.frame(te, n.trt, n.ctrl, se)
+rownames(tes) <- c('lths', 'hs', 'ltcoll', 'college')
+round(tes, 2)
+```
+
+Standard errors are just slightly different. Also order of columns should be te+se, then sample sizes.
+
+# Figure 20.13
+
+# Figure 20.14
