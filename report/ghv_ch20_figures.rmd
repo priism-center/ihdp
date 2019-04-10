@@ -168,7 +168,8 @@ colnames(tes.ns) <- c('te', 'n.trt', 'n.ctrl', 'se')
 round(tes.ns,2)
 ```
 
-Apply function implementation
+Apply function implementation.
+Also, in original code the sample size for controls is controls and treatment.
 
 ```{r}
 edu <- list(cc2$lths, cc2$hs, cc2$ltcoll, cc2$college)
@@ -187,7 +188,7 @@ n.trt <- sapply(edu, FUN=function(x) {
     tapply(rep(1, nrow(cc2)), list(cc2$treat, x), sum)[4]
 })
 n.ctrl <- sapply(edu, FUN=function(x) {
-    sum(tapply(rep(1, nrow(cc2)), list(cc2$treat, x), sum)[,2])
+    sum(tapply(rep(1, nrow(cc2)), list(cc2$treat, x), sum)[3])
 })
 
 # std errors
