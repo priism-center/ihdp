@@ -34,25 +34,34 @@ load('data/cc2.Rdata')
 
 
 # Figure 20.1
+Distributions for health outcomes, not IHDP data.
 
 # Figure 20.2
+Distributions for health outcomes, not IHDP data.
 
 # Figure 20.3
+Treatment effect with confidence bars plot from Electric Company example.
 
+```{r, eval=FALSE}
+for (k in 1:4) {
+    fit_supp <- stan_glm(post_test ~ supp + pre_test, data=electric,subset = (grade==k) & (!is.na(supp)))
+}
+```
 
 # Figure 20.4
 Same as Figure 10.1 from GH. Two plots showing imbalance, but not any specific covariate, just arbitrary RV x.
 
-
 # Figure 20.5
 Same as Figure 10.2 from GH. Three plots showing one and two examples of no and partial overlap, respectively. Also not of any specific covariate, just an arbitrary RV.
 
-
 # Figure 20.6
+Two plots showing hypothetical post-/pre- test scores and the difference between estimated regression lines and true regression surface.
 
 # Figure 20.7
+Same plot as 20.6, with an additional plot with regressions fit only to the part of the covariate space with overlap.
 
 # Figure 20.8
+Four plots from Electric Company example showing post-/pre- test scores; each plot represents a separate regression fit for each grade.
 
 # Figure 20.9
 
@@ -129,7 +138,8 @@ hist(cc2$age[cc2$treat==0],xlim=c(0,110),main="",xlab="age of child (months)",bo
 hist(cc2$age[cc2$treat==1],xlim=c(0,110),xlab="",breaks=seq(0,110,10),freq=TRUE, add=T)
 ```
 
-# Figure 20.12
+# Figure 20.12 {.tabset .tabset-fade}
+## Original code
 ```{r}
 #Stratified analyses
 ### CODE THIS MORE EFFICIENTLY!  use aggregate function?  or just one of the apply's?
@@ -167,9 +177,9 @@ rownames(tes.ns) <- c('lths', 'hs', 'ltcoll', 'college')
 colnames(tes.ns) <- c('te', 'n.trt', 'n.ctrl', 'se')
 round(tes.ns,2)
 ```
-
+## New code
 Apply function implementation.
-Also, in original code the sample size for controls is controls and treatment.
+Also, in original code the sample size for controls is controls plus treatment. Though these samples sizes are what are reported in both the original and new texts!
 
 ```{r}
 edu <- list(cc2$lths, cc2$hs, cc2$ltcoll, cc2$college)
@@ -200,12 +210,14 @@ var.ctrl <- sapply(edu, FUN=function(x) {
 })
 se <- sqrt(var.trt/n.trt + var.ctrl/n.ctrl)
 
-tes <- data.frame(te, n.trt, n.ctrl, se)
+tes <- matrix(c(te, n.trt, n.ctrl, se), nrow=4)
 rownames(tes) <- c('lths', 'hs', 'ltcoll', 'college')
+colnames(tes.ns) <- c('te', 'n.trt', 'n.ctrl', 'se')
+
 round(tes, 2)
 ```
 
-Standard errors are just slightly different. Also order of columns should be te+se, then sample sizes.
+Also order of columns should be te+se, then sample sizes to match text.
 
 # Figure 20.13
 
