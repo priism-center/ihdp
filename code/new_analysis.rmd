@@ -19,14 +19,14 @@ knitr::opts_knit$set(root.dir='..')
 ### Read in relevant functions (this can be removed once they are in arm)
 
 ```{r}
-source("code/matching.R")
-source("code/balance.R")
-source("code/estimation.R")
 library(dbarts)
 library(rstan)
     options(mc.cores=parallel::detectCores())
 library(rstanarm)
 library(arm)
+source("code/matching.R")
+source("code/balance.R")
+source("code/estimation.R")
 ```
 
 
