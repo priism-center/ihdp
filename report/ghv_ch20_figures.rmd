@@ -96,9 +96,10 @@ form_20.9 <- as.formula(cc2[, c("treat", covs)])
 ps_fit_20.9 <- stan_glm(form_20.9, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 pscores_20.9 <- apply(posterior_linpred(ps_fit_20.9, type='link'), 2, mean)
 matches_20.9 <- matching(z=cc2$treat, score=pscores_20.9, replace=FALSE)
-par(mfrow=c(1,1))
 bal_20.9 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches_20.9$cnts, estimand='ATT')
-plot(bal_20.9)
+par(mfrow=c(2,1))
+plot.balance(bal_20.9, which.covs='cont')
+plot.balance(bal_20.9, which.covs='binary')
 ```
 
 Doesn't match up exactly, also this function doesn't fix the issues with binary covariates
