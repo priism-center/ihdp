@@ -234,11 +234,12 @@ print(form.nr)
 ps_fit <- stan_glm(form.nr, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
 pscores <- posterior_linpred(ps_fit, type='link')
+pscores.mean <- apply(pscores,2,mean)
 
-matches <- matching(z=cc2$treat, score=apply(pscores,2,mean), replace=FALSE)
+matches <- matching(z=cc2$treat, score=pscores.mean, replace=FALSE)
 matched <- cc2[matches$match.ind,]
 
-matches.wr <- matching(z=cc2$treat, score=apply(pscores,2,mean), replace=TRUE)
+matches.wr <- matching(z=cc2$treat, score=pscores.mean, replace=TRUE)
 wts.wr <- matches.wr$cnts
 ```
 
@@ -246,19 +247,19 @@ Text doesn't use mean of p-scores in matching function, typo?
 
 # Figure 20.13
 ```{r}
-xmin <- range(pscores)[1]
-xmax <- range(pscores)[2]
+xmin <- range(pscores.mean)[1]
+xmax <- range(pscores.mean)[2]
 par(mfrow=c(1,2))
-hist(pscores[cc2$treat==0],
-    xlim=c(xmin,xmax),
+hist(pscores.mean[cc2$treat==0],
+    xlim=c(xmin,xmax), ylim=c(0,0.2),
     main='before matching', border='darkgrey', breaks=seq(xmin-1,xmax+1,by=1), mgp=c(2,.5,0),
     xlab='propensity score', freq=FALSE)
-hist(pscores[cc2$treat==1], freq=FALSE, add=TRUE)
-hist(pscores[matched$treat==0],
-    xlim=c(-54,12),
+hist(pscores.mean[cc2$treat==1], freq=FALSE, add=TRUE)
+hist(pscores.mean[matched$treat==0],
+    xlim=c(-54,12), ylim=c(0,.09),
     main='after matching', border='darkgrey', breaks=seq(-54,12,by=1), mgp=c(2,.5,0),
     xlab='propensity score', freq=FALSE)
-hist(pscores[matched$treat==1], freq=FALSE, add=TRUE)
+hist(pscores.mean[matched$treat==1], freq=FALSE, add=TRUE)
 dev.off()
 ```
 
