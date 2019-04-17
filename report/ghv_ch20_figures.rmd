@@ -242,7 +242,7 @@ matches.wr <- matching(z=cc2$treat, score=apply(pscores,2,mean), replace=TRUE)
 wts.wr <- matches.wr$cnts
 ```
 
-Text doesn't use mean of p-scores, typo?
+Text doesn't use mean of p-scores in matching function, typo?
 
 # Figure 20.13
 ```{r}
