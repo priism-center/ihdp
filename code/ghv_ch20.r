@@ -94,7 +94,8 @@ round((9.3* 126 + 4.1 * 82 + 7.9* 48 + 4.6* 34) / (126+82+48+34), 1)
 
 
 # STEP 2: ESTIMATING THE PROPENSITY SCORE
-ps_fit_1.st <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+# these are the no redundancy covariates with and without state covaraites
+ps_fit_1 <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 ps_fit_1.st <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
 pscores <- apply(posterior_linpred(ps_fit_1, type='link'), 2, mean)
@@ -124,6 +125,7 @@ dev.off()
 # example: good overlap, bad pscore
 ps3.mod <- glm(treat ~ unemp.rt, data=cc2,family=binomial) 
 pscores3 <- predict(ps3.mod, type="link")
+
 pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=4, height=4)
 par(mfrow=c(1,2))
 # Plot the overlapping histograms for pscore1b, density
@@ -137,3 +139,14 @@ hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,1300),
      mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
 hist(pscores3[cc2$treat==1], freq=TRUE, add=TRUE)
 dev.off()
+
+# STEP 5: ESTIMATING A TREATMENT EFFECT USING THE RESTRUCTURED DATA
+# treatment effect without replacement
+reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2[matches$match.ind,], algorithm='optimizing')
+summary(reg_ps)['treat', 1:2]
+
+# treatment effect with replacement
+
+# standard regression estimate of treatment effect
+reg_te <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, algorithm='optimizing')
+summary(reg_te)['treat', 1:2]
