@@ -16,9 +16,13 @@ load('data/cc2.Rdata')
 
 
 # Create pscore, do matching, create balance plot, estimate treatment effect on restructured sample
-pscoreAll <- function(covs, matching=FALSE, data=cc2){
+pscoreAll <- function(covs, form=NULL, matching=FALSE, data=cc2){
 
-    ps_form <- as.formula(data[, c('treat', covs)])
+    if (is.null(form)) {
+        ps_form <- as.formula(data[, c('treat', covs)])
+    } else {
+        ps_form <- form
+    }
     ps_fit <- stan_glm(ps_form, family=binomial(link='logit'), data=data, algorithm='optimizing')
 
     pscores <- apply(posterior_linpred(ps_fit, type='link'), 2, mean)
@@ -27,7 +31,7 @@ pscoreAll <- function(covs, matching=FALSE, data=cc2){
     bal <- balance(rawdata=data[,covs], data$treat, matched=matches$cnts, estimand='ATT')
 
     reg_form <- as.formula(data[, c('ppvtr.36', 'treat', covs)])
-    reg_ps <- stan_glm(reg_form, data=data, algorithm='optimizing')
+    reg_ps <- stan_glm(reg_form, data=data, weight=matches$cnts, algorithm='optimizing')
 
     print(summary(reg_ps)['treat', 1:2])
 
