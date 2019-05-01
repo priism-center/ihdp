@@ -117,6 +117,9 @@ matched.st <- cc2[matches$match.ind,]
 matches.wr.st <- matching(z=cc2$treat, score=pscores.st, replace=TRUE)
 wts.wr.st <- matches.wr$cnts
 
+bal_nr <- balance(rawdata=cc2[,covs.nr], treat=cc2$treat, matched=matches$cnts, estimand='ATT')
+bal_nr.st <- balance(rawdata=cc2[,covs.nr.st], treat=cc2$treat, matched=matches.st$cnts, estimand='ATT')
+
 # STEP 4: DIAGNOSTICS FOR BALANCE AND OVERLAP
 # separate balance plots for continuous and binary variables
 pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', height=3, width=5)
@@ -155,8 +158,11 @@ reg_te <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltc
 summary(reg_te)['treat', 1:2]
 
 
+
+############################################
 # FINDING A IMPROVED PSCORE MODEL
 # find an improved pscore model using an interaction or squared term
+############################################
 
 # No redundancy covariate set, without states
 all.nr <- pscoreAll(covs.nr, form=NULL, matching=FALSE, data=cc2)
@@ -205,5 +211,55 @@ psfit_age <- stan_glm(upper, family='binomial', data=cc2, algorithm='optimizing'
 
 pscores_age <- apply(posterior_linpred(psfit_age, type='link'), 2, mean)
 matches_age <- matching(z=cc2$treat, score=pscores_age, replace=FALSE)
+matches_age.wr <- matching(z=cc2$treat, score=pscores_age, replace=TRUE)
 bal_age <- balance(rawdata=cc2[,c(covs.nr,'age')], cc2$treat, matched=matches_age$cnts, estimand='ATT')
+bal_age.wr <- balance(rawdata=cc2[,c(covs.nr,'age')], cc2$treat, matched=matches_age.wr$cnts, estimand='ATT')
+
 reg_age <- stan_glm(update.formula(upper, ppvtr.36 ~ treat + .), data=cc2[matches_age$match.ind,], algorithm='optimizing')
+reg_age.wr <- stan_glm(update.formula(upper, ppvtr.36 ~ treat + .), data=cc2, weights=matches_age.wr$cnts, algorithm='optimizing')
+
+# bw^2
+form <- as.formula(cc2[, c('treat', covs.nr)])
+form <- update.formula(form, ~ . + poly(bw,2))
+
+psfit_bw <- stan_glm(form, family='binomial', data=cc2, algorithm='optimizing')
+
+pscores_bw <- apply(posterior_linpred(psfit_bw, type='link'), 2, mean)
+matches_bw <- matching(z=cc2$treat, score=pscores_bw, replace=FALSE)
+matches_bw.wr <- matching(z=cc2$treat, score=pscores_bw, replace=TRUE)
+bal_bw <- balance(rawdata=cc2[,c(covs.nr)], cc2$treat, matched=matches_bw$cnts, estimand='ATT')
+bal_bw.wr <- balance(rawdata=cc2[,c(covs.nr)], cc2$treat, matched=matches_bw.wr$cnts, estimand='ATT')
+
+reg_bw <- stan_glm(update.formula(form, ppvtr.36 ~ treat + .), data=cc2[matches_bw$match.ind,], algorithm='optimizing')
+reg_bw.wr <- stan_glm(update.formula(form, ppvtr.36 ~ treat + .), data=cc2, weight=matches_bw.wr$cnts, algorithm='optimizing')
+
+
+# preterm:momage
+form <- as.formula(cc2[, c('treat', covs.nr)])
+form <- update.formula(form, ~ . + preterm:momage)
+
+psfit_preterm_momage <- stan_glm(form, family='binomial', data=cc2, algorithm='optimizing')
+
+pscores_preterm_momage <- apply(posterior_linpred(psfit_preterm_momage, type='link'), 2, mean)
+matches_preterm_momage <- matching(z=cc2$treat, score=pscores_preterm_momage, replace=FALSE)
+matches_preterm_momage.wr <- matching(z=cc2$treat, score=pscores_preterm_momage, replace=TRUE)
+bal_preterm_momage <- balance(rawdata=cc2[,c(covs.nr)], cc2$treat, matched=matches_preterm_momage$cnts, estimand='ATT')
+bal_preterm_momage.wr <- balance(rawdata=cc2[,c(covs.nr)], cc2$treat, matched=matches_preterm_momage.wr$cnts, estimand='ATT')
+
+reg_preterm_momage <- stan_glm(update.formula(form, ppvtr.36 ~ treat + .), data=cc2[matches_preterm_momage$match.ind,], algorithm='optimizing')
+reg_preterm_momage.wr <- stan_glm(update.formula(form, ppvtr.36 ~ treat + .), data=cc2, weight=matches_preterm_momage.wr$cnts, algorithm='optimizing')
+
+# ps model from GHV
+covs_2 <- c('bwg', 'educ', 'ethnic', 'b.marr', 'work.dur', 'prenatal', 'preterm', 'age', 'momage', 'dayskidh', 'sex', 'first', 'bw', 'black', 'preterm')
+ps_fit_2 <- stan_glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + dayskidh + sex + first + bw + black*(bw + preterm) +b.marr*(bw + preterm), family=binomial(link="logit"), data=cc2)
+
+pscores_2 <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
+matches_2 <- matching(z=cc2$treat, score=pscores_2, replace=FALSE)
+matches_2.wr <- matching(z=cc2$treat, score=pscores_2, replace=TRUE)
+bal_2 <- balance(rawdata=cc2[,covs_2], cc2$treat, matched=matches_2$cnts, estimand='ATT')
+bal_2.wr <- balance(rawdata=cc2[,covs_2], cc2$treat, matched=matches_2.wr$cnts, estimand='ATT')
+
+reg_2 <- stan_glm(ppvtr.36 ~ treat + bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + dayskidh + sex + first + bw + black*(bw + preterm) +b.marr*(bw + preterm), data=cc2[matches_2$match.ind,], algorithm='optimizing')
+reg_2.wr <- stan_glm(ppvtr.36 ~ treat + bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + dayskidh + sex + first + bw + black*(bw + preterm) +b.marr*(bw + preterm), data=cc2, weight=matches_2.wr$cnts, algorithm='optimizing')
+
+
