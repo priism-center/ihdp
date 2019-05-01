@@ -3,12 +3,12 @@
 ############################################
 
 library(rstan)
-    options(mc.cores=parallel.detectCores())
-libary(rstanarm)
+    options(mc.cores=parallel::detectCores())
+library(rstanarm)
 library(arm)
 source('code/matching.R')
 source('code/balance.R')
-source('code/estimationn.R')
+source('code/estimation.R')
 
 ############################################
 
