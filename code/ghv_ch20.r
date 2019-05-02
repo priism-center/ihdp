@@ -16,6 +16,8 @@ source('code/pscore.r')
 
 load('data/cc2.Rdata')
 
+set.seed(8)
+
 
 # FIGURE 20.9
 # balance plot
@@ -150,6 +152,8 @@ dev.off()
 # treatment effect without replacement
 reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2[matches$match.ind,], algorithm='optimizing')
 summary(reg_ps)['treat', 1:2]
+reg_ps.wr <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, weight=matches.wr$cnts, algorithm='optimizing')
+summary(reg_ps.wr)['treat', 1:2]
 
 # treatment effect with replacement
 
@@ -251,7 +255,7 @@ reg_preterm_momage.wr <- stan_glm(update.formula(form, ppvtr.36 ~ treat + .), da
 
 # ps model from GHV
 covs_2 <- c('bwg', 'educ', 'ethnic', 'b.marr', 'work.dur', 'prenatal', 'preterm', 'age', 'momage', 'dayskidh', 'sex', 'first', 'bw', 'black', 'preterm')
-ps_fit_2 <- stan_glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + dayskidh + sex + first + bw + black*(bw + preterm) +b.marr*(bw + preterm), family=binomial(link="logit"), data=cc2)
+ps_fit_2 <- stan_glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + dayskidh + sex + first + bw + black*(bw + preterm) +b.marr*(bw + preterm), family=binomial(link="logit"), data=cc2, algorithm='optimizing')
 
 pscores_2 <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
 matches_2 <- matching(z=cc2$treat, score=pscores_2, replace=FALSE)
