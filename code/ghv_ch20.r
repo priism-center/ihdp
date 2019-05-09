@@ -7,6 +7,7 @@ library(rstan)
     options(mc.cores=parallel::detectCores())
 library(rstanarm)
 library(arm)
+library(survey)
 source('code/matching.R')
 source('code/balance.R')
 source('code/estimation.R')
@@ -15,7 +16,6 @@ source('code/estimation.R')
 
 load('data/cc2.Rdata')
 
-set.seed(8)
 
 
 # FIGURE 20.9
@@ -24,6 +24,7 @@ covs.all <- setdiff(names(cc2), c('row.names', 'row.names.1', 'treat', 'treat0',
 covs <- c('neg.bw', 'preterm', 'dayskidh', 'sex', 'first', 'age', 'black', 'hispanic', 'white', 'b.marr', 'lths', 'hs', 'ltcoll', 'college', 'work.dur', 'prenatal', 'momage')
 cov_names <- c('negative birth weight', 'weeks preterm', 'days in hospital', 'male', 'first born', 'age', 'black', 'hispanic', 'white', 'unmarried at birth', 'less than high school', 'high school graduate', 'some college', 'college graduate', 'worked during pregnancy', 'had no prenatal care', 'age at birth')
 
+set.seed(8)
 form_20.9 <- as.formula(cc2[, c("treat", covs)])
 ps_fit_20.9 <- stan_glm(form_20.9, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
@@ -99,6 +100,7 @@ round((9.3* 126 + 4.1 * 82 + 7.9* 48 + 4.6* 34) / (126+82+48+34), 1)
 # these are the no redundancy covariates with and without state covaraites
 covs.nr <- c('bwg', 'hispanic', 'black', 'b.marr', 'lths', 'hs', 'ltcoll', 'work.dur', 'prenatal', 'sex', 'first', 'bw', 'preterm', 'momage', 'dayskidh')
 covs.nr.st <- c(covs.nr, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st53')
+set.seed(20)
 ps_fit_1 <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 ps_fit_1.st <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
@@ -126,22 +128,42 @@ bal_nr.st <- balance(rawdata=cc2[,covs.nr.st], treat=cc2$treat, matched=matches.
 # Figure 20.13
 pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=12, height=8)
 par(mfrow=c(2,1))
-plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 6, 5, 8))
-plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 6, 5, 8))
+plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 4, 5, 4))
+plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 4, 5, 4))
 dev.off()
 
+
+# Figure 20.14
+# overlap of propensity scores before/after matching with replacement
+par(mfrow=c(1,2))
+# Plot the overlapping histograms for pscores before matching, density
+hist(pscores[cc2$treat==0], xlim=c(-20,5), ylim=c(0,.28), main="before matching", border="darkgrey", mgp=c(2,.5,0), xlab="propensity scores", freq=FALSE)
+hist(pscores[cc2$treat==1], freq=FALSE, add=TRUE)
+# Plot the overlapping histograms for pscores after matching, frequency
+hist(pscores[cc2$treat==0][matches.wr$match.ind], xlim=c(-20,6), ylim=c(0,.28), main="after matching", border="darkgrey", mgp=c(2,.5,0), xlab="propensity scores", freq=FALSE)
+hist(pscores[cc2$treat==1][matches.wr$match.ind], freq=FALSE, add=TRUE)
+dev.off()
+# how many pscores[cc2$treat==0] left out of plot?
+sum(pscores[cc2$treat==0] < -20)
+
+
+# pscore matching check
+sum(pscores[cc2$treat==1] > max(pscores[cc2$treat==0]))
+
+# Figures 20.15
 # example: good overlap, bad pscore
 ps3.mod <- glm(treat ~ unemp.rt, data=cc2,family=binomial) 
 pscores3 <- predict(ps3.mod, type="link")
 
-pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=4, height=4)
+pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=8, height=6)
 par(mfrow=c(1,2))
-# Plot the overlapping histograms for pscore1b, density
+par(mar=c(4,3,4,3))
+# Plot the overlapping histograms for pscore3, density
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,8),
      main="", border="darkgrey", 
      mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
 hist(pscores3[cc2$treat==1], freq=FALSE, add=TRUE)
-# Plot the overlapping histograms for pscore1b, frequency
+# Plot the overlapping histograms for pscore3, frequency
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,1300),
      main="", border="darkgrey", 
      mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
@@ -150,6 +172,7 @@ dev.off()
 
 # STEP 5: ESTIMATING A TREATMENT EFFECT USING THE RESTRUCTURED DATA
 # treatment effect without replacement
+set.seed(20)
 reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2[matches$match.ind,], algorithm='optimizing')
 summary(reg_ps)['treat', 1:2]
 reg_ps.wr <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, weight=matches.wr$cnts, algorithm='optimizing')
@@ -266,4 +289,22 @@ bal_2.wr <- balance(rawdata=cc2[,covs_2], cc2$treat, matched=matches_2.wr$cnts, 
 reg_2 <- stan_glm(ppvtr.36 ~ treat + bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + dayskidh + sex + first + bw + black*(bw + preterm) +b.marr*(bw + preterm), data=cc2[matches_2$match.ind,], algorithm='optimizing')
 reg_2.wr <- stan_glm(ppvtr.36 ~ treat + bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + dayskidh + sex + first + bw + black*(bw + preterm) +b.marr*(bw + preterm), data=cc2, weight=matches_2.wr$cnts, algorithm='optimizing')
 
+
+# transformed variables
+cc2$bwT = (cc2$bw-1500)^2
+cc2$dayskidT = log(cc2$dayskidh+1)
+cc2$pretermT = (cc2$preterm+8)^2
+cc2$momageT = (cc2$momage^2)
+
+set.seed(8)
+ps_fit_2 <- stan_glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT), family=binomial(link="logit"), data=cc2, algorithm='optimizing')
+
+pscores_2 <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
+matches2_wr <- matching(z=cc2$treat, score=pscores_2, replace=TRUE)
+matched2_wr <- cc2[matches2_wr$matched,]
+
+bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
+plot.balance(bal_2.wr)
+
+reg_ps <- stan_glm(ppvtr_36 ~ treat + hispanic + black + b_marr + lths + hs + ltcoll + work_dur + prenatal + mom_age + sex + first + preterm + age + dayskidh + bw, weights = xxx, data=matched_wr)
 
