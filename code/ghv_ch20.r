@@ -17,25 +17,9 @@ source('code/estimation.R')
 load('data/cc2.Rdata')
 
 
-
-# FIGURE 20.9
-# balance plot
 covs.all <- setdiff(names(cc2), c('row.names', 'row.names.1', 'treat', 'treat0', 'ppvtr.36'))
 covs <- c('neg.bw', 'preterm', 'dayskidh', 'sex', 'first', 'age', 'black', 'hispanic', 'white', 'b.marr', 'lths', 'hs', 'ltcoll', 'college', 'work.dur', 'prenatal', 'momage')
 cov_names <- c('negative birth weight', 'weeks preterm', 'days in hospital', 'male', 'first born', 'age', 'black', 'hispanic', 'white', 'unmarried at birth', 'less than high school', 'high school graduate', 'some college', 'college graduate', 'worked during pregnancy', 'had no prenatal care', 'age at birth')
-
-set.seed(8)
-form_20.9 <- as.formula(cc2[, c("treat", covs)])
-ps_fit_20.9 <- stan_glm(form_20.9, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
-
-pscores_20.9 <- apply(posterior_linpred(ps_fit_20.9, type='link'), 2, mean)
-matches_20.9 <- matching(z=cc2$treat, score=pscores_20.9, replace=FALSE)
-matches_20.9.wr <- matching(z=cc2$treat, score=pscores_20.9, replace=TRUE)
-bal_20.9 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches_20.9$cnts, estimand='ATT')
-bal_20.9.wr <- balance(rawdat=cc2[,covs], cc2$treat, matched=matches_20.9.wr$cnts, estimand='ATT')
-
-plot.balance(bal_20.9, longcovnames=cov_names)
-plot.balance(bal_20.9.wr, longcovnames=cov_names)
 
 
 # FIGURE 20.11
@@ -97,7 +81,7 @@ round((9.3* 126 + 4.1 * 82 + 7.9* 48 + 4.6* 34) / (126+82+48+34), 1)
 
 
 # STEP 2: ESTIMATING THE PROPENSITY SCORE
-# these are the no redundancy covariates with and without state covaraites
+# these are the no redundancy covariates with and without state covariates
 covs.nr <- c('bwg', 'hispanic', 'black', 'b.marr', 'lths', 'hs', 'ltcoll', 'work.dur', 'prenatal', 'sex', 'first', 'bw', 'preterm', 'momage', 'dayskidh')
 covs.nr.st <- c(covs.nr, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st53')
 set.seed(20)
@@ -234,6 +218,10 @@ plot.balance(bal_2.wr, which.covs='cont', main='ps_fit_2')
 plot.balance(bal_nr, which.covs='binary', main='ps_fit_1')
 plot.balance(bal_2.wr, which.covs='binary', main='ps_fit_2')
 dev.off()
+
+# FIGURE 20.9
+pdf
+plot.balance(bal_2.wr, longcovnames=cov_names)
 
 reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, algorithm='optimizing')
 summary(reg_ps)['treat', 1:2]
