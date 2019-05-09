@@ -175,10 +175,14 @@ dev.off()
 set.seed(20)
 reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2[matches$match.ind,], algorithm='optimizing')
 summary(reg_ps)['treat', 1:2]
+# treatment effect with replacement
 reg_ps.wr <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, weight=matches.wr$cnts, algorithm='optimizing')
 summary(reg_ps.wr)['treat', 1:2]
+ps_fit_1_design <- svydesign(ids=~1, weights=matches.wr$cnts, data=cc2)
+reg_ps.wr_svy <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, design=ps_fit_1_design, data=cc2)
+summary(reg_ps.wr_svy)$coef['treat', 1:2]
 
-# treatment effect with replacement
+
 
 # standard regression estimate of treatment effect
 reg_te <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, algorithm='optimizing')
@@ -207,5 +211,6 @@ matched2_wr <- cc2[matches2_wr$matched,]
 bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
 plot.balance(bal_2.wr)
 
-reg_ps <- stan_glm(ppvtr_36 ~ treat + hispanic + black + b_marr + lths + hs + ltcoll + work_dur + prenatal + mom_age + sex + first + preterm + age + dayskidh + bw, weights = xxx, data=matched_wr)
-
+reg_ps2_design <- svydesign(ids=~1, weights=~matches2_wr$cnts, data=cc2)
+reg_ps2 <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, design=reg_ps2_design, data=cc2)
+summary(reg_ps2)$coef['treat', 1:2]
