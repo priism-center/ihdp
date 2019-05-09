@@ -10,7 +10,6 @@ library(arm)
 source('code/matching.R')
 source('code/balance.R')
 source('code/estimation.R')
-source('code/pscore.r')
 
 ############################################
 
@@ -40,7 +39,7 @@ plot.balance(bal_20.9.wr, longcovnames=cov_names)
 
 # FIGURE 20.11
 # overlap plot
-pdf('outputs/ghv_ch20/age.educ.freq.AZC.f20.11.pdf', height=5, width=6)
+pdf('outputs/ghv_ch20/age.educ.freq.AZC.f20.11.pdf', height=4, width=6)
 par(mfrow=c(1,2))
 hist(cc2$educ[cc2$treat==0],xlim=c(0,5),main="",border="darkgrey",breaks=c(.5,1.5,2.5,3.5,4.5),mgp=c(2,.5,0),xlab="mother's education",freq=TRUE)
 hist(cc2$educ[cc2$treat==1],xlim=c(0,5),xlab="education",breaks=c(.5,1.5,2.5,3.5,4.5),freq=TRUE,add=T)
@@ -124,10 +123,11 @@ bal_nr.st <- balance(rawdata=cc2[,covs.nr.st], treat=cc2$treat, matched=matches.
 
 # STEP 4: DIAGNOSTICS FOR BALANCE AND OVERLAP
 # separate balance plots for continuous and binary variables
-pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', height=3, width=5)
+# Figure 20.13
+pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=12, height=8)
 par(mfrow=c(2,1))
-plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='cont')
-plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='binary')
+plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 6, 5, 8))
+plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 6, 5, 8))
 dev.off()
 
 # example: good overlap, bad pscore
