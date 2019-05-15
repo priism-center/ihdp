@@ -110,13 +110,8 @@ bal_nr.wr <- balance(rawdata=cc2[,covs.nr], treat=cc2$treat, matched=matches.wr$
 bal_nr.st <- balance(rawdata=cc2[,covs.nr.st], treat=cc2$treat, matched=matches.st$cnts, estimand='ATT')
 
 # Figure 20.9
-# balance plot, labelled cov names, ps_fit_1 MwoR
-pdf('outputs/ghv_ch20/balance.both.azc.pdf', width=11, height=8.5)
-plot.balance(bal_nr, longcovnames=cov_names, mar=c(12,8,16,8))
-title('Absolute Standardized Difference in Means', adjust=-1)
-dev.off()
-
 ############################################
+# balance plot, labelled cov names, ps_fit_1 MwoR
 # manual plot code taken from balance.R
 {
 pdf('outputs/ghv_ch20/balance.both.azc.pdf', width=11, height=8.5)
@@ -224,6 +219,7 @@ dev.off()
 
 
 # Figure 20.14
+############################################
 # overlap of propensity scores before/after matching with replacement
 {
 pdf('outputs/ghv_ch20/ps.overlap.dens.AZC.pdf', width=11, height=8.5)
@@ -238,15 +234,16 @@ hist(pscores[cc2[matches.wr$match.ind, 'treat']==0], xlim=c(-20,6), ylim=c(0,.28
 hist(pscores[cc2[matches.wr$match.ind, 'treat']==1], freq=FALSE, add=TRUE)
 dev.off()
 }
+
 # how many pscores[cc2$treat==0] left out of plot?
 sum(pscores[cc2$treat==0] < -20)
-
 
 # pscore matching check
 sum(pscores[cc2$treat==1] > max(pscores[cc2$treat==0]))
 
 
 # Figures 20.15
+############################################
 # example: good overlap, bad pscore
 ps3.mod <- glm(treat ~ unemp.rt, data=cc2,family=binomial) 
 pscores3 <- predict(ps3.mod, type="link")
@@ -254,8 +251,8 @@ pscores3 <- predict(ps3.mod, type="link")
 {
 pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=11, height=8.5)
 par(mfrow=c(1,2))
-# par(mar=c(10,3,4,3))
-par(mar=c(16,8,2,2))
+par(mar=c(16,3,4,3))
+# par(mar=c(16,8,2,2))
 # Plot the overlapping histograms for pscore3, density
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,8),
      main="", border="darkgrey", 
