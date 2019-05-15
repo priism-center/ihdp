@@ -21,6 +21,7 @@ covs.all <- setdiff(names(cc2), c('row.names', 'row.names.1', 'treat', 'treat0',
 covs <- c('neg.bw', 'preterm', 'dayskidh', 'sex', 'first', 'age', 'black', 'hispanic', 'white', 'b.marr', 'lths', 'hs', 'ltcoll', 'college', 'work.dur', 'prenatal', 'momage')
 cov_names <- c('negative birth weight', 'weeks preterm', 'days in hospital', 'male', 'first born', 'age', 'black', 'hispanic', 'white', 'unmarried at birth', 'less than high school', 'high school graduate', 'some college', 'college graduate', 'worked during pregnancy', 'had no prenatal care', 'age at birth')
 
+# Figure 20.9: See ps_fit_1 MwoR, prior to step 4
 
 # FIGURE 20.11
 # overlap plot
@@ -105,16 +106,120 @@ matches.wr.st <- matching(z=cc2$treat, score=pscores.st, replace=TRUE)
 wts.wr.st <- matches.wr$cnts
 
 bal_nr <- balance(rawdata=cc2[,covs.nr], treat=cc2$treat, matched=matches$cnts, estimand='ATT')
+bal_nr.wr <- balance(rawdata=cc2[,covs.nr], treat=cc2$treat, matched=matches.wr$cnts, estimand='ATT')
 bal_nr.st <- balance(rawdata=cc2[,covs.nr.st], treat=cc2$treat, matched=matches.st$cnts, estimand='ATT')
+
+# Figure 20.9
+# balance plot, labelled cov names, ps_fit_1 MwoR
+pdf('outputs/ghv_ch20/balance.both.azc.pdf', width=11, height=8.5)
+plot.balance(bal_nr, longcovnames=cov_names, mar=c(12,8,16,8))
+title('Absolute Standardized Difference in Means', adjust=-1)
+dev.off()
+
+############################################
+# manual plot code taken from balance.R
+{
+pdf('outputs/ghv_ch20/balance.both.azc.pdf', width=11, height=8.5)
+pts <- bal_nr$diff.means.raw[,4]
+pts2 <- bal_nr$diff.means.matched[,4]
+K <- length(pts)
+idx <- 1:K
+main <- 'Absolute Standardized Difference in Means'
+
+mar <- c(18, 6, 6, 7)
+par(mar=mar)
+
+maxchar <- max(sapply(cov_names, nchar))
+min.mar <- par('mar')
+mar[2] <- max(min.mar[2], trunc(mar[2] + maxchar/10)) + mar[2] + 0.5
+par(mar=mar)
+
+pts <- rev(pts)
+pts2 <- rev(pts2)
+longcovnames <- rev(cov_names)
+
+plot(c(pts,pts2), c(idx,idx),
+    bty='n', xlab='', ylab='',
+    xaxt='n', yaxt='n', type='n',
+    main=main, cex.main=1)
+abline(v=0, lty=2)
+points(pts, idx, cex=0.8)
+points(pts2, idx, pch=19, cex=0.8)
+axis(3)
+axis(2, at=1:K, labels=longcovnames[1:K],
+    las=2, hadj=1, lty=0, cex.axis=0.8)
+dev.off()
+}
+############################################
 
 # STEP 4: DIAGNOSTICS FOR BALANCE AND OVERLAP
 # separate balance plots for continuous and binary variables
 # Figure 20.13
-pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=12, height=8)
-par(mfrow=c(2,1))
-plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 4, 5, 4))
-plot.balance(bal_20.9.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 4, 5, 4))
+# TODO switch to  horizontal side by side, switch to ps_fit_1 MwR
+{
+pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=11, height=6)
+par(mfrow=c(1,2))
+mar <- c(14, 7, 6, 7)
+# plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 4, 5, 4))
+pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==FALSE,4]
+pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==FALSE,4]
+K <- length(pts)
+idx <- 1:K
+main <- 'Absolute Standardized Difference in Means'
+longcovnames <- cov_names[bal_nr.wr$binary==FALSE]
+
+par(mar=mar)
+
+maxchar <- max(sapply(longcovnames, nchar))
+min.mar <- par('mar')
+mar[2] <- max(min.mar[2], trunc(mar[2] + maxchar/10)) + mar[2] + 0.5
+par(mar=mar)
+
+pts <- rev(pts)
+pts2 <- rev(pts2)
+longcovnames <- rev(longcovnames)
+
+plot(c(pts,pts2), c(idx,idx),
+    bty='n', xlab='', ylab='',
+    xaxt='n', yaxt='n', type='n',
+    main=main, cex.main=1)
+abline(v=0, lty=2)
+points(pts, idx, cex=0.8)
+points(pts2, idx, pch=19, cex=0.8)
+axis(3)
+axis(2, at=1:K, labels=longcovnames[1:K],
+    las=2, hadj=1, lty=0, cex.axis=0.8)
+# plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 4, 5, 4))
+pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==TRUE,4]
+pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==TRUE,4]
+K <- length(pts)
+idx <- 1:K
+main <- 'Absolute Difference in Means'
+longcovnames <- cov_names[bal_nr.wr$binary==TRUE]
+
+par(mar=mar)
+
+maxchar <- max(sapply(longcovnames, nchar))
+min.mar <- par('mar')
+mar[2] <- max(min.mar[2], trunc(mar[2] + maxchar/10)) + mar[2] + 0.5
+par(mar=mar)
+
+pts <- rev(pts)
+pts2 <- rev(pts2)
+longcovnames <- rev(longcovnames)
+
+plot(c(pts,pts2), c(idx,idx),
+    bty='n', xlab='', ylab='',
+    xaxt='n', yaxt='n', type='n',
+    main=main, cex.main=1)
+abline(v=0, lty=2)
+points(pts, idx, cex=0.8)
+points(pts2, idx, pch=19, cex=0.8)
+axis(3)
+axis(2, at=1:K, labels=longcovnames[1:K],
+    las=2, hadj=1, lty=0, cex.axis=0.8)
 dev.off()
+}
 
 
 # Figure 20.14
@@ -134,6 +239,8 @@ sum(pscores[cc2$treat==0] < -20)
 # pscore matching check
 sum(pscores[cc2$treat==1] > max(pscores[cc2$treat==0]))
 
+
+# TODO make this wider
 # Figures 20.15
 # example: good overlap, bad pscore
 ps3.mod <- glm(treat ~ unemp.rt, data=cc2,family=binomial) 
@@ -219,7 +326,8 @@ plot.balance(bal_nr, which.covs='binary', main='ps_fit_1')
 plot.balance(bal_2.wr, which.covs='binary', main='ps_fit_2')
 dev.off()
 
-# FIGURE 20.9
+# new figure
+# side by side binary/continuous, ps_fit_2.wr
 pdf
 plot.balance(bal_2.wr, longcovnames=cov_names)
 
