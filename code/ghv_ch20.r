@@ -155,21 +155,22 @@ dev.off()
 # STEP 4: DIAGNOSTICS FOR BALANCE AND OVERLAP
 # separate balance plots for continuous and binary variables
 # Figure 20.13
-# TODO switch to  horizontal side by side, switch to ps_fit_1 MwR
+
 {
-pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=11, height=6)
+pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=10, height=6)
 par(mfrow=c(1,2))
-mar <- c(14, 7, 6, 7)
-# plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 4, 5, 4))
-pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==FALSE,4]
-pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==FALSE,4]
+mar1 <- c(6, 3, 6, 4)
+mar2 <- c(18, 1, 6, 4)
+# plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 4, 5, 4))
+pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==TRUE,4]
+pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==TRUE,4]
 K <- length(pts)
 idx <- 1:K
-main <- 'Absolute Standardized Difference in Means'
-longcovnames <- cov_names[bal_nr.wr$binary==FALSE]
+main <- 'Absolute Difference in Means'
+longcovnames <- cov_names[bal_nr.wr$binary==TRUE]
 
+mar <- mar1
 par(mar=mar)
-
 maxchar <- max(sapply(longcovnames, nchar))
 min.mar <- par('mar')
 mar[2] <- max(min.mar[2], trunc(mar[2] + maxchar/10)) + mar[2] + 0.5
@@ -189,16 +190,16 @@ points(pts2, idx, pch=19, cex=0.8)
 axis(3)
 axis(2, at=1:K, labels=longcovnames[1:K],
     las=2, hadj=1, lty=0, cex.axis=0.8)
-# plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 4, 5, 4))
-pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==TRUE,4]
-pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==TRUE,4]
+# plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 4, 5, 4))
+pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==FALSE,4]
+pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==FALSE,4]
 K <- length(pts)
 idx <- 1:K
-main <- 'Absolute Difference in Means'
-longcovnames <- cov_names[bal_nr.wr$binary==TRUE]
+main <- 'Absolute Standardized Difference in Means'
+longcovnames <- cov_names[bal_nr.wr$binary==FALSE]
 
+mar <- mar2
 par(mar=mar)
-
 maxchar <- max(sapply(longcovnames, nchar))
 min.mar <- par('mar')
 mar[2] <- max(min.mar[2], trunc(mar[2] + maxchar/10)) + mar[2] + 0.5
@@ -240,13 +241,13 @@ sum(pscores[cc2$treat==0] < -20)
 sum(pscores[cc2$treat==1] > max(pscores[cc2$treat==0]))
 
 
-# TODO make this wider
 # Figures 20.15
 # example: good overlap, bad pscore
 ps3.mod <- glm(treat ~ unemp.rt, data=cc2,family=binomial) 
 pscores3 <- predict(ps3.mod, type="link")
 
-pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=8, height=6)
+{
+pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=10, height=6)
 par(mfrow=c(1,2))
 par(mar=c(4,3,4,3))
 # Plot the overlapping histograms for pscore3, density
@@ -260,6 +261,7 @@ hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,1300),
      mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
 hist(pscores3[cc2$treat==1], freq=TRUE, add=TRUE)
 dev.off()
+}
 
 # STEP 5: ESTIMATING A TREATMENT EFFECT USING THE RESTRUCTURED DATA
 # treatment effect without replacement
