@@ -225,14 +225,19 @@ dev.off()
 
 # Figure 20.14
 # overlap of propensity scores before/after matching with replacement
+{
+pdf('outputs/ghv_ch20/ps.overlap.dens.AZC.pdf', width=11, height=8.5)
 par(mfrow=c(1,2))
 # Plot the overlapping histograms for pscores before matching, density
-hist(pscores[cc2$treat==0], xlim=c(-20,5), ylim=c(0,.28), main="before matching", border="darkgrey", mgp=c(2,.5,0), xlab="propensity scores", freq=FALSE)
+par(mar=c(16,8,2,2))
+hist(pscores[cc2$treat==0], xlim=c(-20,5), ylim=c(0,.28), main="before matching", border="darkgrey", mgp=c(2,.5,0), xlab="logit propensity scores", freq=FALSE)
 hist(pscores[cc2$treat==1], freq=FALSE, add=TRUE)
 # Plot the overlapping histograms for pscores after matching, frequency
-hist(pscores[cc2$treat==0][matches.wr$match.ind], xlim=c(-20,6), ylim=c(0,.28), main="after matching", border="darkgrey", mgp=c(2,.5,0), xlab="propensity scores", freq=FALSE)
-hist(pscores[cc2$treat==1][matches.wr$match.ind], freq=FALSE, add=TRUE)
+par(mar=c(16,3,2,8))
+hist(pscores[cc2[matches.wr$match.ind, 'treat']==0], xlim=c(-20,6), ylim=c(0,.28), main="after matching", border="darkgrey", mgp=c(2,.5,0), xlab="logit propensity scores", freq=FALSE)
+hist(pscores[cc2[matches.wr$match.ind, 'treat']==1], freq=FALSE, add=TRUE)
 dev.off()
+}
 # how many pscores[cc2$treat==0] left out of plot?
 sum(pscores[cc2$treat==0] < -20)
 
@@ -247,18 +252,19 @@ ps3.mod <- glm(treat ~ unemp.rt, data=cc2,family=binomial)
 pscores3 <- predict(ps3.mod, type="link")
 
 {
-pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=10, height=6)
+pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=11, height=8.5)
 par(mfrow=c(1,2))
-par(mar=c(4,3,4,3))
+# par(mar=c(10,3,4,3))
+par(mar=c(16,8,2,2))
 # Plot the overlapping histograms for pscore3, density
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,8),
      main="", border="darkgrey", 
-     mgp=c(2,.5,0), xlab="propensity scores",freq=FALSE)
+     mgp=c(2,.5,0), xlab="logit propensity scores",freq=FALSE)
 hist(pscores3[cc2$treat==1], freq=FALSE, add=TRUE)
 # Plot the overlapping histograms for pscore3, frequency
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,1300),
      main="", border="darkgrey", 
-     mgp=c(2,.5,0), xlab="propensity scores",freq=TRUE)
+     mgp=c(2,.5,0), xlab="logit propensity scores",freq=TRUE)
 hist(pscores3[cc2$treat==1], freq=TRUE, add=TRUE)
 dev.off()
 }
