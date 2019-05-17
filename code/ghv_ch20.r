@@ -250,19 +250,13 @@ pscores3 <- predict(ps3.mod, type="link")
 
 {
 pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=11, height=8.5)
-par(mfrow=c(1,2))
-par(mar=c(16,3,4,3))
+par(mar=c(8,3,4,3))
 # par(mar=c(16,8,2,2))
 # Plot the overlapping histograms for pscore3, density
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,8),
      main="", border="darkgrey", 
      mgp=c(2,.5,0), xlab="logit propensity scores",freq=FALSE)
 hist(pscores3[cc2$treat==1], freq=FALSE, add=TRUE)
-# Plot the overlapping histograms for pscore3, frequency
-hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,1300),
-     main="", border="darkgrey", 
-     mgp=c(2,.5,0), xlab="logit propensity scores",freq=TRUE)
-hist(pscores3[cc2$treat==1], freq=TRUE, add=TRUE)
 dev.off()
 }
 
