@@ -340,10 +340,14 @@ summary(reg_ps2)$coef['treat', 1:2]
 
 ############################################
 # IPTW (including state indicators)
+
 wt.iptw <- inv.logit(pscores.st) / (1 - inv.logit(pscores.st))
-wt.iptw[cc2$treat==0] <- wt.iptw[cc2$treat==0] * sum(wt.iptw[cc2$treat==0]) / sum(cc2$treat==0)
+wt.iptw[cc2$treat==0] <- wt.iptw[cc2$treat==0] * (sum(wt.iptw[cc2$treat==0]) / sum(cc2$treat==0))
 wt.iptw[cc2$treat==1] <- 1
 
+ps_fit_iptw_design.st <- svydesign(ids=~1, weights=wt.iptw, data=cc2)
+reg_ps.iptw.st <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53, design=ps_fit_iptw_design.st, data=cc2)
+summary(reg_ps.iptw.st)$coef['treat', 1:2]
 
 ############################################
 # Section 20.8, Beyond balance in means
