@@ -175,7 +175,7 @@ plot.balance <- function(x, longcovnames=NULL, which.covs="mixed",
       maxchar <- max(sapply(longcovnames, nchar))
   }
   min.mar <- par("mar")
-  mar[2] <- max(min.mar[2], trunc(mar[2] + maxchar/10)) + mar[2] + 1
+  mar[2] <- max(min.mar[2], trunc(mar[2] + maxchar/10)) + mar[2] + 0.5
   par(mar = mar)
 
   ## now reverse the order of everything so the plot proceeds from
