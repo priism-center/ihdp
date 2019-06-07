@@ -336,3 +336,45 @@ summary(reg_ps)['treat', 1:2]
 reg_ps2_design <- svydesign(ids=~1, weights=~matches2_wr$cnts, data=cc2)
 reg_ps2.wr <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, design=reg_ps2_design, data=cc2)
 summary(reg_ps2)$coef['treat', 1:2]
+
+
+############################################
+# IPTW (including state indicators)
+wt.iptw <- inv.logit(pscores.st) / (1 - inv.logit(pscores.st))
+wt.iptw[cc2$treat==0] <- wt.iptw[cc2$treat==0] * sum(wt.iptw[cc2$treat==0]) / sum(cc2$treat==0)
+wt.iptw[cc2$treat==1] <- 1
+
+
+############################################
+# Section 20.8, Beyond balance in means
+# table of ratio of standard deviations across treatment & control groups for unmatched, MWOR, MWR
+
+cont_vars <- c('neg.bw', 'preterm', 'dayskidh', 'age', 'momage')
+sds.um <- sapply(cont_vars, function(x){
+    tapply(cc2[,x], cc2$treat, sd)
+})
+sds.mwor <- sapply(cont_vars, function(x){
+    tapply(matched[,x], matched$treat, sd)
+})
+mwr.ind <- rep(cc2$row.names, times=matches.wr$cnts)
+matched.wr <- cc2[mwr.ind, ]
+sds.mwr <- sapply(cont_vars, function(x){
+    tapply(matched.wr[,x], matched.wr$treat, sd)
+})
+
+sd.ratios <- lapply(list(sds.um, sds.mwor, sds.mwr), function(mat){
+    apply(mat, 2, function(col){
+        col[2] / col[1]
+    })
+})
+
+sd.table <- round(data.frame(
+    unmatched=sd.ratios[[1]],
+    MWOR=sd.ratios[[2]],
+    MWR=sd.ratios[[3]]), 2)
+#          unmatched MWOR  MWR
+# neg.bw        0.50 0.91 0.52
+# preterm       0.95 0.71 1.12
+# dayskidh      2.07 0.82 3.13
+# age           0.07 0.07 0.08
+# momage        1.86 1.76 1.95
