@@ -242,15 +242,16 @@ sum(pscores[cc2$treat==0] < -20)
 sum(pscores[cc2$treat==1] > max(pscores[cc2$treat==0]))
 
 
-# Figures 20.15
+# Figures 20.16
 ############################################
 # example: good overlap, bad pscore
+set.seed(20)
 ps3.mod <- glm(treat ~ unemp.rt, data=cc2,family=binomial) 
 pscores3 <- predict(ps3.mod, type="link")
 
 {
 pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=11, height=8.5)
-par(mar=c(8,3,4,3))
+par(mar=c(8,3,4,3), cex=1.4)
 # par(mar=c(16,8,2,2))
 # Plot the overlapping histograms for pscore3, density
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,8),
@@ -389,6 +390,5 @@ sd.table <- round(data.frame(
 # todo
 # disregard state indicators, use model that yielded best balance from first plot
 # play around with p-score model until estimate gets better
-# plots to increase: 20.14, 20.16
 # whatever mar/cex manual changes I added to balance plot function, make those changes to the function itself
 # sunday: re-read Chapter (wait for Jennifer to finish some edits)
