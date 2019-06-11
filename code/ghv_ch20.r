@@ -154,8 +154,8 @@ dev.off()
 {
 pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=10, height=6)
 par(mfrow=c(1,2))
-mar1 <- c(6, 3, 6, 4)
-mar2 <- c(18, 1, 6, 4)
+mar1 <- c(6, 4, 6, 4)
+mar2 <- c(18, 3, 6, 4)
 # plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 4, 5, 4))
 pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==TRUE,4]
 pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==TRUE,4]
@@ -178,13 +178,13 @@ longcovnames <- rev(longcovnames)
 plot(c(pts,pts2), c(idx,idx),
     bty='n', xlab='', ylab='',
     xaxt='n', yaxt='n', type='n',
-    main=main, cex.main=1)
+    main=main, cex.main=1.2)
 abline(v=0, lty=2)
-points(pts, idx, cex=0.8)
-points(pts2, idx, pch=19, cex=0.8)
+points(pts, idx, cex=1.6)
+points(pts2, idx, pch=19, cex=1.6)
 axis(3)
 axis(2, at=1:K, labels=longcovnames[1:K],
-    las=2, hadj=1, lty=0, cex.axis=0.8)
+    las=2, hadj=1, lty=0, cex.axis=1)
 # plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 4, 5, 4))
 pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==FALSE,4]
 pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==FALSE,4]
@@ -207,13 +207,13 @@ longcovnames <- rev(longcovnames)
 plot(c(pts,pts2), c(idx,idx),
     bty='n', xlab='', ylab='',
     xaxt='n', yaxt='n', type='n',
-    main=main, cex.main=1)
+    main=main, cex.main=1.2)
 abline(v=0, lty=2)
-points(pts, idx, cex=0.8)
-points(pts2, idx, pch=19, cex=0.8)
+points(pts, idx, cex=1.6)
+points(pts2, idx, pch=19, cex=1.6)
 axis(3)
 axis(2, at=1:K, labels=longcovnames[1:K],
-    las=2, hadj=1, lty=0, cex.axis=0.8)
+    las=2, hadj=1, lty=0, cex.axis=1)
 dev.off()
 }
 
@@ -389,6 +389,6 @@ sd.table <- round(data.frame(
 # todo
 # disregard state indicators, use model that yielded best balance from first plot
 # play around with p-score model until estimate gets better
-# plots to increase: 20.9 (bigger, or at least bigger dots), 20.13, 20.14, 20.16
+# plots to increase: 20.14, 20.16
 # whatever mar/cex manual changes I added to balance plot function, make those changes to the function itself
 # sunday: re-read Chapter (wait for Jennifer to finish some edits)
