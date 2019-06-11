@@ -121,7 +121,7 @@ print.balance <- function(x, ..., combined=FALSE, digits= 2)
 ### NEXT NEED TO FIGURE OUT HOW TO REVERSE THE ORDER OF THE COVARIATES
 
 plot.balance <- function(x, longcovnames=NULL, which.covs="mixed",
-                v.axis=TRUE, cex.main=1, cex.vars=0.8, cex.pts=0.8,
+                v.axis=TRUE, cex.main=1, cex.vars=1, cex.pts=1,
                 mar=c(4, 3, 5.1, 2), plot=TRUE, x.max = NULL,...)
 {
 # if which.covs = mixed then it plots all as std diffs
