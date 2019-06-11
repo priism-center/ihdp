@@ -136,13 +136,13 @@ longcovnames <- rev(cov_names)
 plot(c(pts,pts2), c(idx,idx),
     bty='n', xlab='', ylab='',
     xaxt='n', yaxt='n', type='n',
-    main=main, cex.main=1)
+    main=main, cex.main=1.2)
 abline(v=0, lty=2)
-points(pts, idx, cex=0.8)
-points(pts2, idx, pch=19, cex=0.8)
+points(pts, idx, cex=1.8)
+points(pts2, idx, pch=19, cex=1.8)
 axis(3)
 axis(2, at=1:K, labels=longcovnames[1:K],
-    las=2, hadj=1, lty=0, cex.axis=0.8)
+    las=2, hadj=1, lty=0, cex.axis=1.2)
 dev.off()
 }
 ############################################
@@ -349,6 +349,7 @@ ps_fit_iptw_design.st <- svydesign(ids=~1, weights=wt.iptw, data=cc2)
 reg_ps.iptw.st <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53, design=ps_fit_iptw_design.st, data=cc2)
 summary(reg_ps.iptw.st)$coef['treat', 1:2]
 
+
 ############################################
 # Section 20.8, Beyond balance in means
 # table of ratio of standard deviations across treatment & control groups for unmatched, MWOR, MWR
@@ -382,3 +383,12 @@ sd.table <- round(data.frame(
 # dayskidh      2.07 0.82 3.13
 # age           0.07 0.07 0.08
 # momage        1.86 1.76 1.95
+
+
+############################################
+# todo
+# disregard state indicators, use model that yielded best balance from first plot
+# play around with p-score model until estimate gets better
+# plots to increase: 20.9 (bigger, or at least bigger dots), 20.13, 20.14, 20.16
+# whatever mar/cex manual changes I added to balance plot function, make those changes to the function itself
+# sunday: re-read Chapter (wait for Jennifer to finish some edits)
