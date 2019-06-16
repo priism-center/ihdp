@@ -228,7 +228,7 @@ dev.off()
 # overlap of propensity scores before/after matching with replacement
 {
 pdf('outputs/ghv_ch20/ps.overlap.dens.AZC.pdf', width=11, height=8.5)
-par(mfrow=c(1,2))
+par(mfrow=c(1,2), cex.main=1.3, cex.lab=1.3)
 # Plot the overlapping histograms for pscores before matching, density
 par(mar=c(16,8,2,2))
 hist(pscores[cc2$treat==0], xlim=c(-20,5), ylim=c(0,.28), main="before matching", border="darkgrey", mgp=c(2,.5,0), xlab="logit propensity scores", freq=FALSE)
@@ -256,7 +256,7 @@ pscores3 <- predict(ps3.mod, type="link")
 
 {
 pdf('outputs/ghv_ch20/bad.pscore.overlap.AZC.pdf', width=11, height=8.5)
-par(mar=c(8,3,4,3), cex=1.4)
+par(mar=c(8,3,4,3), cex=1.4, cex.lab=1.2)
 # par(mar=c(16,8,2,2))
 # Plot the overlapping histograms for pscore3, density
 hist(pscores3[cc2$treat==0], xlim=range(pscores3), ylim=c(0,8),
