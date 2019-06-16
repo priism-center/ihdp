@@ -142,8 +142,8 @@ plot(c(pts,pts2), c(idx,idx),
     xaxt='n', yaxt='n', type='n',
     main=main, cex.main=1.2)
 abline(v=0, lty=2)
-points(pts, idx, cex=1.8)
-points(pts2, idx, pch=19, cex=1.8)
+points(pts, idx, cex=1)
+points(pts2, idx, pch=19, cex=1)
 axis(3)
 axis(2, at=1:K, labels=longcovnames[1:K],
     las=2, hadj=1, lty=0, cex.axis=1.2)
@@ -184,8 +184,8 @@ plot(c(pts,pts2), c(idx,idx),
     xaxt='n', yaxt='n', type='n',
     main=main, cex.main=1.2)
 abline(v=0, lty=2)
-points(pts, idx, cex=1.6)
-points(pts2, idx, pch=19, cex=1.6)
+points(pts, idx, cex=1)
+points(pts2, idx, pch=19, cex=1)
 axis(3)
 axis(2, at=1:K, labels=longcovnames[1:K],
     las=2, hadj=1, lty=0, cex.axis=1)
@@ -213,8 +213,8 @@ plot(c(pts,pts2), c(idx,idx),
     xaxt='n', yaxt='n', type='n',
     main=main, cex.main=1.2)
 abline(v=0, lty=2)
-points(pts, idx, cex=1.6)
-points(pts2, idx, pch=19, cex=1.6)
+points(pts, idx, cex=1)
+points(pts2, idx, pch=19, cex=1)
 axis(3)
 axis(2, at=1:K, labels=longcovnames[1:K],
     las=2, hadj=1, lty=0, cex.axis=1)
