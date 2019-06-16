@@ -158,7 +158,7 @@ dev.off()
 {
 pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=10, height=6)
 par(mfrow=c(1,2))
-mar1 <- c(6, 4, 6, 4)
+mar1 <- c(5, 4, 6, 2)
 mar2 <- c(18, 3, 6, 4)
 # plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 4, 5, 4))
 pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==TRUE,4]
@@ -182,11 +182,12 @@ longcovnames <- rev(longcovnames)
 plot(c(pts,pts2), c(idx,idx),
     bty='n', xlab='', ylab='',
     xaxt='n', yaxt='n', type='n',
-    main=main, cex.main=1.2)
+    main=main, cex.main=1.2,
+    xlim=c(0,.55))
 abline(v=0, lty=2)
 points(pts, idx, cex=1)
 points(pts2, idx, pch=19, cex=1)
-axis(3)
+axis(3, at=seq(0,.5,.1), xpd=TRUE)
 axis(2, at=1:K, labels=longcovnames[1:K],
     las=2, hadj=1, lty=0, cex.axis=1)
 # plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 4, 5, 4))
