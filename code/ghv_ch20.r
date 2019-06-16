@@ -85,6 +85,8 @@ round((9.3* 126 + 4.1 * 82 + 7.9* 48 + 4.6* 34) / (126+82+48+34), 1)
 # these are the no redundancy covariates with and without state covariates
 covs.nr <- c('bwg', 'hispanic', 'black', 'b.marr', 'lths', 'hs', 'ltcoll', 'work.dur', 'prenatal', 'sex', 'first', 'bw', 'preterm', 'momage', 'dayskidh')
 covs.nr.st <- c(covs.nr, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st53')
+
+
 set.seed(20)
 ps_fit_1 <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 ps_fit_1.st <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
@@ -105,9 +107,10 @@ matched.st <- cc2[matches$match.ind,]
 matches.wr.st <- matching(z=cc2$treat, score=pscores.st, replace=TRUE)
 wts.wr.st <- matches.wr$cnts
 
-bal_nr <- balance(rawdata=cc2[,covs.nr], treat=cc2$treat, matched=matches$cnts, estimand='ATT')
-bal_nr.wr <- balance(rawdata=cc2[,covs.nr], treat=cc2$treat, matched=matches.wr$cnts, estimand='ATT')
-bal_nr.st <- balance(rawdata=cc2[,covs.nr.st], treat=cc2$treat, matched=matches.st$cnts, estimand='ATT')
+# Balance plots for all covariattes, not just those used for pscore spec
+bal_nr <- balance(rawdata=cc2[,covs], treat=cc2$treat, matched=matches$cnts, estimand='ATT')
+bal_nr.wr <- balance(rawdata=cc2[,covs], treat=cc2$treat, matched=matches.wr$cnts, estimand='ATT')
+bal_nr.st <- balance(rawdata=cc2[, union(covs, covs.nr.st)], treat=cc2$treat, matched=matches.st$cnts, estimand='ATT')
 
 # Figure 20.9
 ############################################
@@ -115,6 +118,7 @@ bal_nr.st <- balance(rawdata=cc2[,covs.nr.st], treat=cc2$treat, matched=matches.
 # manual plot code taken from balance.R
 {
 pdf('outputs/ghv_ch20/balance.both.azc.pdf', width=11, height=8.5)
+# balance for all covariates, not just those used in propensity score model
 pts <- bal_nr$diff.means.raw[,4]
 pts2 <- bal_nr$diff.means.matched[,4]
 K <- length(pts)
