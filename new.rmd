@@ -71,7 +71,9 @@ Propensity score models
         ps_logit <- stan_glm(ps_form, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
         saveRDS(ps_logit, model)
     }
+    ps_logit <- readRDS(model)
     pscores_base <- apply(posterior_linpred(ps_logit, type='link'), 2, mean)
+    bal.tab(ps_logit, m.threshold=0.1, v.threshold=1.2)
 }
 
 # CBPS
@@ -84,20 +86,28 @@ Propensity score models
         ps_cbps <- CBPS(ps_form, data=cc2, ATT=1, method='over')
         saveRDS(ps_cbps, model)
     }
+    ps_cbps <- readRDS(model)
     pscores_cbps <-  ps_cbps$fitted.values
+    bal.tab(ps_cbps, m.threshold=0.1, v.threshold=1.2)
 }
 
 # Genetic matching
 {
-    model <- 'model/mgen_1.rds'
+    model <- 'models/mgen_1.rds'
     if (file.exists(model)){
         set.seed(20)
-        cl <- makePSOCKcluster(3)
-        X <- setdiff(all.vars(ps_form), 'treeat')
+        if (Sys.info()['sysname']=='unix'){
+            cl <- makePSOCKcluster(20)
+        } else{
+            cl <- makePSOCKcluster(3)
+        }
+        X <- setdiff(all.vars(ps_form), 'treat')
         mgen_1 <- GenMatch(Tr=cc2$treat, X=cc2[,X], BalanceMatrix=cc2[,X], pop.size=1000, cluster=cl, balance=TRUE)
         saveRDS(mgen_1, model)
     } else{
         mgen_1 <- readRDS(model)
     }
 }
+
+# 
 ```

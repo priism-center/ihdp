@@ -319,8 +319,8 @@ ps_fit_2 <- stan_glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + wo
 
 pscores_2 <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
 matches2 <- matching(z=cc2$treat, score=pscores_2, replace=FALSE)
+matched2 <- cc2[matches2$match.ind,]
 matches2_wr <- matching(z=cc2$treat, score=pscores_2, replace=TRUE)
-matched2_wr <- cc2[matches2_wr$matched,]
 
 bal_2 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2$cnts, estimand='ATT')
 bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
@@ -361,7 +361,7 @@ summary(reg_ps.iptw)$coef['treat', 1:2]
 # Section 20.8, Beyond balance in means
 # table of ratio of standard deviations across treatment & control groups for unmatched, MWOR, MWR
 
-cont_vars <- c('neg.bw', 'preterm', 'dayskidh', 'age', 'momage')
+cont_vars <- c('bw', 'preterm', 'dayskidh', 'age', 'momage')
 sds.um <- sapply(cont_vars, function(x){
     tapply(cc2[,x], cc2$treat, sd)
 })
@@ -385,9 +385,35 @@ sd.table <- round(data.frame(
     MWOR=sd.ratios[[2]],
     MWR=sd.ratios[[3]]), 2)
 #          unmatched MWOR  MWR
-# neg.bw        0.50 0.91 0.52
+# bw            0.50 0.91 0.52
 # preterm       0.95 0.71 1.12
 # dayskidh      2.07 0.82 3.13
 # age           0.07 0.07 0.08
 # momage        1.86 1.76 1.95
 
+# try with ps_fit_2
+sds.mwor2 <- sapply(cont_vars, function(x){
+    tapply(matched2[,x], matched2$treat, sd)
+})
+mwr.ind2 <- rep(cc2$row.names, times=matches2_wr$cnts)
+matched2_wr <- cc2[mwr.ind2, ]
+sds.mwr2 <- sapply(cont_vars, function(x){
+    tapply(matched2_wr[,x], matched2_wr$treat, sd)
+})
+
+sd.ratios2 <- lapply(list(sds.um, sds.mwor2, sds.mwr2), function(mat){
+    apply(mat, 2, function(col){
+        col[2] / col[1]
+    })
+})
+
+sd.table2 <- round(data.frame(
+    unmatched=sd.ratios2[[1]],
+    MWOR=sd.ratios2[[2]],
+    MWR=sd.ratios2[[3]]), 2)
+#          unmatched MWOR  MWR
+# bw            0.50 0.84 0.59
+# preterm       0.95 0.82 1.20
+# dayskidh      2.07 0.88 3.07
+# age           0.07 0.07 0.08
+# momage        1.86 1.63 1.89
