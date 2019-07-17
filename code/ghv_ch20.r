@@ -334,7 +334,6 @@ dev.off()
 
 # new figure
 # side by side binary/continuous, ps_fit_2.wr
-pdf
 plot.balance(bal_2.wr, longcovnames=cov_names)
 
 reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, algorithm='optimizing')
@@ -417,3 +416,59 @@ sd.table2 <- round(data.frame(
 # dayskidh      2.07 0.88 3.07
 # age           0.07 0.07 0.08
 # momage        1.86 1.63 1.89
+
+# CBPS
+library(CBPS)
+
+psfit_cbps <- CBPS(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT), data=cc2, ATT=1, method='over')
+pscores_cbps <- psfit_cbps$fitted.values
+matches_cbps <- matching(cc2$treat, score=pscores_cbps, replace=FALSE)
+matched_cbps <-  cc2[matches_cbps$match.ind,]
+matches_wr_cbps <- matching(cc2$treat, score=pscores_cbps, replace=TRUE)
+matched_wr_cbps <- cc2[matches_cbps$match.ind,]
+
+sds.mwor_cbps <- sapply(cont_vars, function(x){
+    tapply(matched_cbps[,x], matched_cbps$treat, sd)
+})
+sds.mwr_cbps <- sapply(cont_vars, function(x){
+    tapply(matched_wr_cbps[,x], matched_wr_cbps$treat, sd)
+})
+
+sd.ratios3 <- lapply(list(sds.um, sds.mwor_cbps, sds.mwr_cbps), function(mat){
+    apply(mat, 2, function(col){
+        col[2] / col[1]
+    })
+})
+
+sd.table3 <- round(data.frame(
+    unmatched=sd.ratios3[[1]],
+    MWOR=sd.ratios3[[2]],
+    MWR=sd.ratios3[[3]]), 2)
+#          unmatched MWOR  MWR
+# bw            0.50 0.59 0.59
+# preterm       0.95 0.75 0.75
+# dayskidh      2.07 0.82 0.82
+# age           0.07 0.06 0.06
+# momage        1.86 1.29 1.29
+
+# genetic matching
+mgen_1 <- readRDS('models/mgen_1.rds')
+matched_mgen <- cc2[c(mgen_1$matches[,1], mgen_1$matches[,2]),]
+
+sds.mwor_mgen <- sapply(cont_vars, function(x){
+    tapply(matched_mgen[,x], matched_mgen$treat, sd)
+})
+sds.mwr_mgen <- sapply(cont_vars, function(x){
+    tapply(matched_wr_mgen[,x], matched_wr_mgen$treat, sd)
+})
+
+sd.ratios4 <- lapply(list(sds.um, sds.mwor_mgen, sds.mwr_mgen), function(mat){
+    apply(mat, 2, function(col){
+        col[2] / col[1]
+    })
+})
+
+sd.table4 <- round(data.frame(
+    unmatched=sd.ratios4[[1]],
+    MWOR=sd.ratios4[[2]],
+    MWR=sd.ratios4[[3]]), 2)
