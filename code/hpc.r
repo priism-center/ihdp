@@ -31,7 +31,7 @@ ps_form <- formula(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll 
 
 set.seed(20)
         
-cl <- makePSOCKcluster(20)
+cl <- makePSOCKcluster(10)
 X <- setdiff(all.vars(ps_form), 'treat')
 
 mgen_1_wr <- GenMatch(Tr=cc2$treat, X=cc2[,X], BalanceMatrix=cc2[,X], pop.size=1000, cluster=cl, balance=TRUE, replace=TRUE, ties=FALSE)
