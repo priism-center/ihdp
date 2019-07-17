@@ -19,6 +19,7 @@ knitr::opts_knit$set(root.dir='.')
 ```
 
 ```{r library}
+library(tidyverse)
 library(rstan)
 library(rstanarm)
 library(survey)
@@ -31,6 +32,9 @@ library(Matching)
 library(CBPS)
 library(WeightIt)
 library(foreach)
+library(parallel)
+
+set.cobalt.options(continuous='std', binary='raw')
 ```
 
 ```{r data}
@@ -48,14 +52,18 @@ cov_names <- c("birth weight", "weeks preterm", "days in hospital",
     "had no prenatal care", "age at birth")
 ```
 
+
+
 Raw data balance
 ========================
 
 ```{r, include=TRUE}
 ps_form <- formula(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw + preterm + momage + dayskidh)
 
-bal.tab(ps_form, data=cc2, estimand='ATT', m.threshold=.1, v.threshold=1.1)
+bal.tab(ps_form, data=cc2, estimand='ATT', continuous='std', m.threshold=.1, v.threshold=1.1)
 ```
+
+
 
 Propensity score models
 ==========================
@@ -93,8 +101,11 @@ Propensity score models
 
 # Genetic matching
 {
+    # Matching w/o replacement
     model <- 'models/mgen_1.rds'
     if (file.exists(model)){
+        mgen_1 <- readRDS(model)
+    } else{
         set.seed(20)
         if (Sys.info()['sysname']=='unix'){
             cl <- makePSOCKcluster(20)
@@ -104,10 +115,98 @@ Propensity score models
         X <- setdiff(all.vars(ps_form), 'treat')
         mgen_1 <- GenMatch(Tr=cc2$treat, X=cc2[,X], BalanceMatrix=cc2[,X], pop.size=1000, cluster=cl, balance=TRUE)
         saveRDS(mgen_1, model)
-    } else{
-        mgen_1 <- readRDS(model)
     }
-}
 
-# 
+    # # Matching w/ replacement
+    # model <- 'models/mgen_1_wr.rds'
+    # if (file.exists(model)){
+    #     mgen_1_wr <- readRDS(model)
+    # } else{
+    #     set.seed(20)
+    #     if (Sys.info()['sysname']=='unix'){
+    #         cl <- makePSOCKcluster(20)
+    #     } else{
+    #         cl <- makePSOCKcluster(3)
+    #     }
+    #     X <- setdiff(all.vars(ps_form), 'treat')
+    #     mgen_1_wr <- GenMatch(Tr=cc2$treat, X=cc2[,X], BalanceMatrix=cc2[,X], pop.size=1000, cluster=cl, balance=TRUE, replace=TRUE, ties=FALSE)
+    #     saveRDS(mgen_1_wr, model)
+    # }
+}
+```
+
+
+
+Matching w/o replacement
+==========================
+```{r}
+# Base logit
+matches_base <- matching(cc2$treat, score=pscores_base, replace=FALSE)
+matched_base <- cc2[matches_base$match.ind,]
+
+# CBPS
+matches_cbps <- matching(cc2$treat, score=pscores_cbps, replace=FALSE)
+matched_cbps <- cc2[matches_cbps$match.ind,]
+
+# GenMatch
+matches_mgen <- c(mgen_1$matches[,1], mgen_1$matches[,2])
+matched_mgen <- cc2[matches_mgen,]
+```
+
+
+
+Matching w/ replacement
+==========================
+```{r}
+# Base logit
+matches.wr_base <- matching(cc2$treat, score=pscores_base, replace=TRUE)
+matched.wr_base <- cc2[matches.wr_base$match.ind,]
+
+# CBPS
+matches.wr_cbps <- matching(cc2$treat, score=pscores_cbps, replace=TRUE)
+matched.wr_cbps <- cc2[matches.wr_cbps$match.ind,]
+```
+
+
+
+Balance
+==========================
+```{r, include=TRUE}
+bal.tab(ps_form, data=matched_base, estimand='ATT', continuous='std',m.threshold=0.1, v.threshold=1.2)
+bal.tab(ps_form, data=matched.wr_base, estimand='ATT', continuous='std',m.threshold=0.1, v.threshold=1.2)
+
+bal.tab(ps_form, data=matched_cbps, estimand='ATT', continuous='std',m.threshold=0.1, v.threshold=1.2)
+bal.tab(ps_form, data=matched.wr_cbps, estimand='ATT', continuous='std',m.threshold=0.1, v.threshold=1.2)
+
+bal.tab(ps_form, data=matched_mgen, estimand='ATT', continuous='std',m.threshold=0.1, v.threshold=1.2)
+```
+
+
+
+Treatment Effect
+==========================
+```{r, echo=TRUE, include=TRUE}
+te_form <- formula(ppvtr.36 ~ treat + bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw + preterm + momage + dayskidh)
+
+
+# Base logit mwor
+set.seed(20)
+summary(stan_glm(te_form, data=matched_base, algorithm='optimizing'))['treat', 1:2]
+
+# CBPS mwor
+set.seed(20)
+summary(stan_glm(te_form, data=matched_cbps, algorithm='optimizing'))['treat', 1:2]
+
+# GenMatch mwor
+set.seed(20)
+summary(stan_glm(te_form, data=matched_mgen, algorithm='optimizing'))['treat', 1:2]
+
+# Base logit mwr
+set.seed(20)
+summary(stan_glm(te_form, data=matched.wr_base, algorithm='optimizing'))['treat', 1:2]
+
+# CBPS mwr
+set.seed(20)
+summary(stan_glm(te_form, data=matched.wr_cbps, algorithm='optimizing'))['treat', 1:2]
+
 ```
