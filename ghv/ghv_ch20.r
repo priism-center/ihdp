@@ -336,12 +336,12 @@ dev.off()
 # side by side binary/continuous, ps_fit_2.wr
 plot.balance(bal_2.wr, longcovnames=cov_names)
 
-reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, algorithm='optimizing')
+reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT), data=cc2, algorithm='optimizing')
 summary(reg_ps)['treat', 1:2]
 
 reg_ps2_design <- svydesign(ids=~1, weights=~matches2_wr$cnts, data=cc2)
-reg_ps2.wr <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, design=reg_ps2_design, data=cc2)
-summary(reg_ps2)$coef['treat', 1:2]
+reg_ps2.wr <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT), design=reg_ps2_design, data=cc2)
+summary(reg_ps2.wr)$coef['treat', 1:2]
 
 
 ############################################
