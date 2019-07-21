@@ -107,7 +107,7 @@ Propensity score models
         mgen_1 <- readRDS(model)
     } else{
         set.seed(20)
-        if (Sys.info()['sysname']=='unix'){
+        if (Sys.info()['sysname']=='Linux'){
             cl <- makePSOCKcluster(20)
         } else{
             cl <- makePSOCKcluster(3)
@@ -117,21 +117,21 @@ Propensity score models
         saveRDS(mgen_1, model)
     }
 
-    # # Matching w/ replacement
-    # model <- 'models/mgen_1_wr.rds'
-    # if (file.exists(model)){
-    #     mgen_1_wr <- readRDS(model)
-    # } else{
-    #     set.seed(20)
-    #     if (Sys.info()['sysname']=='unix'){
-    #         cl <- makePSOCKcluster(20)
-    #     } else{
-    #         cl <- makePSOCKcluster(3)
-    #     }
-    #     X <- setdiff(all.vars(ps_form), 'treat')
-    #     mgen_1_wr <- GenMatch(Tr=cc2$treat, X=cc2[,X], BalanceMatrix=cc2[,X], pop.size=1000, cluster=cl, balance=TRUE, replace=TRUE, ties=FALSE)
-    #     saveRDS(mgen_1_wr, model)
-    # }
+    # Matching w/ replacement
+    model <- 'models/mgen_1_wr.rds'
+    if (file.exists(model)){
+        mgen_1_wr <- readRDS(model)
+    } else{
+        set.seed(20)
+        if (Sys.info()['sysname']=='Linux'){
+            cl <- makeCluster(detectCores(), type='PSOCK')
+        } else{
+            cl <- makePSOCKcluster(detectCores() - 1)
+        }
+        X <- setdiff(all.vars(ps_form), 'treat')
+        mgen_1_wr <- GenMatch(Tr=cc2$treat, X=cc2[,X], BalanceMatrix=cc2[,X], pop.size=1000, cluster=cl, replace=TRUE)
+        saveRDS(mgen_1_wr, model)
+    }
 }
 ```
 
