@@ -7,12 +7,12 @@
 
 args <- commandArgs(trailingOnly=TRUE)
 
-if (args[1]==1){
+if (args[1] == 1){
     REP <- TRUE
-    model_file <- 'models/mgen_1.rds'
+    model_file <- 'models/mgen_1_wr.rds'
 } else {
     REP <- FALSE
-    model_file <- 'models/mgen_1_wr.rds'
+    model_file <- 'models/mgen_1.rds'
 }
 
 ############################################
