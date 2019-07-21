@@ -4,7 +4,7 @@
 #SBATCH --nodes=10
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
-#SBATCH --output=slurm/slurm_$j.out
+#SBATCH --output=slurm/slurm_%j.out
 #SBATCH --mail-type=END
 #SBATCH --mail-user=azc211@nyu.edu
 
