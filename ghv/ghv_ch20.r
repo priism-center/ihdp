@@ -324,14 +324,22 @@ cc2$pretermT = (cc2$preterm+8)^2
 cc2$momageT = (cc2$momage^2)
 
 ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT))
+ps_spec2.st <- update(ps_spec2, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 
 set.seed(8)
 ps_fit_2 <- stan_glm(ps_spec2, family=binomial(link="logit"), data=cc2, algorithm='optimizing')
+set.seed(8)
+ps_fit_2.st <- stan_glm(ps_spec2.st, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
 pscores_2 <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
 matches2 <- matching(z=cc2$treat, score=pscores_2, replace=FALSE)
 matched2 <- cc2[matches2$match.ind,]
 matches2_wr <- matching(z=cc2$treat, score=pscores_2, replace=TRUE)
+
+pscores_2.st <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
+matches2.st <- matching(z=cc2$treat, score=pscores_2.st, replace=FALSE)
+matched2.st <- cc2[matches2.st$match.ind,]
+matches2_wr.st <- matching(z=cc2$treat, score=pscores_2.st replace=TRUE)
 
 bal_2 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2$cnts, estimand='ATT')
 bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
@@ -347,14 +355,22 @@ dev.off()
 # side by side binary/continuous, ps_fit_2.wr
 plot.balance(bal_2.wr, longcovnames=cov_names)
 
+
+# Treatment effect without replacement
 te_spec2 <- update(ps_spec2, ppvtr.36 ~ treat + .)
 set.seed(8)
-reg_ps <- stan_glm(te_spec2, data=cc2, algorithm='optimizing')
-summary(reg_ps)['treat', 1:2]
-
+reg_ps2 <- stan_glm(te_spec2, data=cc2, algorithm='optimizing')
+summary(reg_ps2)['treat', 1:2]
+# Treatment effect with replacement
 reg_ps2_design <- svydesign(ids=~1, weights=~matches2_wr$cnts, data=cc2)
 reg_ps2.wr <- svyglm(te_spec2, design=reg_ps2_design, data=cc2)
 summary(reg_ps2.wr)$coef['treat', 1:2]
+
+# States
+te_spec2.st <- update(ps_spec2.st, ppvtr.36 ~ treat + .)
+set.seed(8)
+reg_ps2.st <- stan_glm(te_spec2.st, data=cc2, algorithm='optimizing')
+summary(reg_ps2.st)['treat', 1:2]
 
 
 ############################################
