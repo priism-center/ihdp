@@ -323,7 +323,7 @@ cc2$dayskidT = log(cc2$dayskidh+1)
 cc2$pretermT = (cc2$preterm+8)^2
 cc2$momageT = (cc2$momage^2)
 
-ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT))
+ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + bw + work.dur + prenatal + preterm + momage + sex + first + bwT + dayskidT + pretermT + momageT + black*(bwT + pretermT + dayskidT) + b.marr*(bwT + pretermT + dayskidT))
 ps_spec2.st <- update(ps_spec2, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 
 set.seed(8)
@@ -339,7 +339,7 @@ matches2_wr <- matching(z=cc2$treat, score=pscores_2, replace=TRUE)
 pscores_2.st <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
 matches2.st <- matching(z=cc2$treat, score=pscores_2.st, replace=FALSE)
 matched2.st <- cc2[matches2.st$match.ind,]
-matches2_wr.st <- matching(z=cc2$treat, score=pscores_2.st replace=TRUE)
+matches2_wr.st <- matching(z=cc2$treat, score=pscores_2.st, replace=TRUE)
 
 bal_2 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2$cnts, estimand='ATT')
 bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
@@ -359,7 +359,7 @@ plot.balance(bal_2.wr, longcovnames=cov_names)
 # Treatment effect without replacement
 te_spec2 <- update(ps_spec2, ppvtr.36 ~ treat + .)
 set.seed(8)
-reg_ps2 <- stan_glm(te_spec2, data=cc2, algorithm='optimizing')
+reg_ps2 <- stan_glm(te_spec2, data=matched2, algorithm='optimizing')
 summary(reg_ps2)['treat', 1:2]
 # Treatment effect with replacement
 reg_ps2_design <- svydesign(ids=~1, weights=~matches2_wr$cnts, data=cc2)
@@ -369,7 +369,7 @@ summary(reg_ps2.wr)$coef['treat', 1:2]
 # States
 te_spec2.st <- update(ps_spec2.st, ppvtr.36 ~ treat + .)
 set.seed(8)
-reg_ps2.st <- stan_glm(te_spec2.st, data=cc2, algorithm='optimizing')
+reg_ps2.st <- stan_glm(te_spec2.st, data=matched2.st, algorithm='optimizing')
 summary(reg_ps2.st)['treat', 1:2]
 
 
