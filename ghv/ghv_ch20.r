@@ -8,9 +8,9 @@ library(rstan)
 library(rstanarm)
 library(arm)
 library(survey)
-source('code/matching.R')
-source('code/balance.R')
-source('code/estimation.R')
+source('library/matching.R')
+source('library/balance.R')
+source('library/estimation.R')
 
 ############################################
 
@@ -87,9 +87,11 @@ covs.nr <- c('bwg', 'hispanic', 'black', 'b.marr', 'lths', 'hs', 'ltcoll', 'work
 covs.nr.st <- c(covs.nr, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st53')
 
 
+ps_spec <- formula(treat ~ bw + bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + preterm + momage + dayskidh)
+
 set.seed(20)
-ps_fit_1 <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
-ps_fit_1.st <- stan_glm(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw + preterm + momage + dayskidh, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+ps_fit_1 <- stan_glm(ps_spec, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+ps_fit_1.st <- stan_glm(update(ps_spec, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53), family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
 pscores <- apply(posterior_linpred(ps_fit_1, type='link'), 2, mean)
 pscores.st <- apply(posterior_linpred(ps_fit_1.st, type='link'), 2, mean)
@@ -268,37 +270,44 @@ dev.off()
 
 ############################################
 # STEP 5: ESTIMATING A TREATMENT EFFECT USING THE RESTRUCTURED DATA
+te_spec_nr <- update(ps_spec, ppvtr.36 ~ treat + .)
+
 # treatment effect without replacement
 set.seed(20)
-reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2[matches$match.ind,], algorithm='optimizing')
+reg_ps <- stan_glm(te_spec_nr, data=cc2[matches$match.ind,], algorithm='optimizing')
 summary(reg_ps)['treat', 1:2]
 # treatment effect with replacement
-reg_ps.wr <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, weight=matches.wr$cnts, algorithm='optimizing')
+set.seed(20)
+reg_ps.wr <- stan_glm(te_spec_nr, data=cc2, weight=matches.wr$cnts, algorithm='optimizing')
 summary(reg_ps.wr)['treat', 1:2]
 ps_fit_1_design <- svydesign(ids=~1, weights=matches.wr$cnts, data=cc2)
-reg_ps.wr_svy <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, design=ps_fit_1_design, data=cc2)
+reg_ps.wr_svy <- svyglm(te_spec_nr, design=ps_fit_1_design, data=cc2)
 summary(reg_ps.wr_svy)$coef['treat', 1:2]
 
 # covs_nr.st; state variables
+te_spec_nr.st <- update(te_spec_nr, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
+# treatment effect without replacement
 set.seed(20)
-reg_ps.st <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53, data=cc2[matches.st$match.ind,], algorithm='optimizing')
+reg_ps.st <- stan_glm(te_spec_nr.st, data=cc2[matches.st$match.ind,], algorithm='optimizing')
 summary(reg_ps.st)['treat', 1:2]
 # treatment effect with replacement
-reg_ps.wr.st <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53, data=cc2, weight=matches.wr.st$cnts, algorithm='optimizing')
+set.seed(20)
+reg_ps.wr.st <- stan_glm(te_spec_nr.st, data=cc2, weight=matches.wr.st$cnts, algorithm='optimizing')
 summary(reg_ps.wr.st)['treat', 1:2]
 ps_fit_1_design.st <- svydesign(ids=~1, weights=matches.wr.st$cnts, data=cc2)
-reg_ps.wr_svy.st <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53, design=ps_fit_1_design.st, data=cc2)
+reg_ps.wr_svy.st <- svyglm(te_spec_nr.st, design=ps_fit_1_design.st, data=cc2)
 summary(reg_ps.wr_svy.st)$coef['treat', 1:2]
 
 
 
 # standard regression estimate of treatment effect
 set.seed(20)
-reg_te <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, data=cc2, algorithm='optimizing')
+reg_te <- stan_glm(te_spec_nr, data=cc2, algorithm='optimizing')
 summary(reg_te)['treat', 1:2]
 
 # standard regression estimate of treatment effect with state
-reg_te.st <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53, data=cc2, algorithm='optimizing')
+set.seed(20)
+reg_te.st <- stan_glm(te_spec_nr.st, data=cc2, algorithm='optimizing')
 summary(reg_te.st)['treat', 1:2]
 
 
@@ -314,8 +323,10 @@ cc2$dayskidT = log(cc2$dayskidh+1)
 cc2$pretermT = (cc2$preterm+8)^2
 cc2$momageT = (cc2$momage^2)
 
+ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT))
+
 set.seed(8)
-ps_fit_2 <- stan_glm(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT), family=binomial(link="logit"), data=cc2, algorithm='optimizing')
+ps_fit_2 <- stan_glm(ps_spec2, family=binomial(link="logit"), data=cc2, algorithm='optimizing')
 
 pscores_2 <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
 matches2 <- matching(z=cc2$treat, score=pscores_2, replace=FALSE)
@@ -336,11 +347,13 @@ dev.off()
 # side by side binary/continuous, ps_fit_2.wr
 plot.balance(bal_2.wr, longcovnames=cov_names)
 
-reg_ps <- stan_glm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT), data=cc2, algorithm='optimizing')
+te_spec2 <- update(ps_spec2, ppvtr.36 ~ treat + .)
+set.seed(8)
+reg_ps <- stan_glm(te_spec2, data=cc2, algorithm='optimizing')
 summary(reg_ps)['treat', 1:2]
 
 reg_ps2_design <- svydesign(ids=~1, weights=~matches2_wr$cnts, data=cc2)
-reg_ps2.wr <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT), design=reg_ps2_design, data=cc2)
+reg_ps2.wr <- svyglm(te_spec2, design=reg_ps2_design, data=cc2)
 summary(reg_ps2.wr)$coef['treat', 1:2]
 
 
@@ -351,8 +364,9 @@ wt.iptw <- inv.logit(pscores) / (1 - inv.logit(pscores))
 wt.iptw[cc2$treat==0] <- wt.iptw[cc2$treat==0] * (sum(wt.iptw[cc2$treat==0]) / sum(cc2$treat==0))
 wt.iptw[cc2$treat==1] <- 1
 
+set.seed(20)
 ps_fit_iptw_design <- svydesign(ids=~1, weights=wt.iptw, data=cc2)
-reg_ps.iptw <- svyglm(ppvtr.36 ~ treat + hispanic + black + b.marr + lths +hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + age + dayskidh + bw, design=ps_fit_iptw_design, data=cc2)
+reg_ps.iptw <- svyglm(te_spec_nr, design=ps_fit_iptw_design, data=cc2)
 summary(reg_ps.iptw)$coef['treat', 1:2]
 
 
