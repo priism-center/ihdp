@@ -19,7 +19,6 @@ knitr::opts_knit$set(root.dir='..')
 ```
 
 ```{r functions}
-library(dbarts)
 library(rstan)
     options(mc.cores=parallel::detectCores())
 library(rstanarm)
