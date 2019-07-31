@@ -23,9 +23,9 @@ library(rstan)
     options(mc.cores=parallel::detectCores())
 library(rstanarm)
 library(arm)
-source('code/matching.R')
-source('code/balance.R')
-source('code/estimation.R')
+source('library/matching.R')
+source('library/balance.R')
+source('library/estimation.R')
 ```
 
 # Reading in the data
