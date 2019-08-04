@@ -8,18 +8,12 @@
 #' 
 #' @param spec1 formula specification 1 or model 1
 #' @param spec2 formula specification 2 or model 2
-#' @param rev BOOLEAN, whether to use spec 2 as the base of comparison
-formDiff <- function(spec1, spec2, rev=FALSE){
-    if (rev) {
-        temp <- spec1
-        spec1 <- spec2
-        spec2 <- temp
-    }
+formDiff <- function(spec1, spec2){
     if (!identical(class(spec1), 'formula')) {
-        try(spec1 <- spec1$formula)
+        spec1 <- spec1$formula
     }
     if (!identical(class(spec2), 'formula')) {
-        try(spec2 <- spec2$formula)
+        spec2 <- spec2$formula
     }
 
     spec1 <- sort(all.vars(spec1))
@@ -28,6 +22,7 @@ formDiff <- function(spec1, spec2, rev=FALSE){
     if (identical(spec1, spec2)) {
         print('Specifications are identical')
     } else {
-        setdiff(sort(all.vars(spec1)), sort(all.vars(spec2)))
+        print(cat('Spec 1 adds: ', setdiff(spec1, spec2)))
+        print(cat('Spec 1 misses: ', setdiff(spec2, spec1)))
     }
 }
