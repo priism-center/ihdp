@@ -2,7 +2,6 @@
 # Only reproducing code and figures dependent on change in propensity score model, covariate selection, treatment effect estimation
 ############################################
 
-library(dbarts)
 library(rstan)
     options(mc.cores=parallel::detectCores())
 library(rstanarm)
@@ -11,6 +10,7 @@ library(survey)
 source('library/matching.R')
 source('library/balance.R')
 source('library/estimation.R')
+source('library/library.r')
 
 ############################################
 
@@ -275,27 +275,29 @@ te_spec_nr <- update(ps_spec, ppvtr.36 ~ treat + .)
 # treatment effect without replacement
 set.seed(20)
 reg_ps <- stan_glm(te_spec_nr, data=cc2[matches$match.ind,], algorithm='optimizing')
-summary(reg_ps)['treat', 1:2]
 # treatment effect with replacement
 set.seed(20)
 reg_ps.wr <- stan_glm(te_spec_nr, data=cc2, weight=matches.wr$cnts, algorithm='optimizing')
-summary(reg_ps.wr)['treat', 1:2]
 ps_fit_1_design <- svydesign(ids=~1, weights=matches.wr$cnts, data=cc2)
 reg_ps.wr_svy <- svyglm(te_spec_nr, design=ps_fit_1_design, data=cc2)
+
+summary(reg_ps)['treat', 1:2]
+summary(reg_ps.wr)['treat', 1:2]
 summary(reg_ps.wr_svy)$coef['treat', 1:2]
 
-# covs_nr.st; state variables
+# Geographic information, covs_nr.st
 te_spec_nr.st <- update(te_spec_nr, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 # treatment effect without replacement
 set.seed(20)
 reg_ps.st <- stan_glm(te_spec_nr.st, data=cc2[matches.st$match.ind,], algorithm='optimizing')
-summary(reg_ps.st)['treat', 1:2]
 # treatment effect with replacement
 set.seed(20)
 reg_ps.wr.st <- stan_glm(te_spec_nr.st, data=cc2, weight=matches.wr.st$cnts, algorithm='optimizing')
-summary(reg_ps.wr.st)['treat', 1:2]
 ps_fit_1_design.st <- svydesign(ids=~1, weights=matches.wr.st$cnts, data=cc2)
 reg_ps.wr_svy.st <- svyglm(te_spec_nr.st, design=ps_fit_1_design.st, data=cc2)
+
+summary(reg_ps.st)['treat', 1:2]
+summary(reg_ps.wr.st)['treat', 1:2]
 summary(reg_ps.wr_svy.st)$coef['treat', 1:2]
 
 
@@ -303,11 +305,11 @@ summary(reg_ps.wr_svy.st)$coef['treat', 1:2]
 # standard regression estimate of treatment effect
 set.seed(20)
 reg_te <- stan_glm(te_spec_nr, data=cc2, algorithm='optimizing')
-summary(reg_te)['treat', 1:2]
-
 # standard regression estimate of treatment effect with state
 set.seed(20)
 reg_te.st <- stan_glm(te_spec_nr.st, data=cc2, algorithm='optimizing')
+
+summary(reg_te)['treat', 1:2]
 summary(reg_te.st)['treat', 1:2]
 
 
@@ -323,7 +325,7 @@ cc2$dayskidT = log(cc2$dayskidh+1)
 cc2$pretermT = (cc2$preterm+8)^2
 cc2$momageT = (cc2$momage^2)
 
-ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + bw + work.dur + prenatal + preterm + momage + sex + first + bwT + dayskidT + pretermT + momageT + black*(bwT + pretermT + dayskidT) + b.marr*(bwT + pretermT + dayskidT))
+ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT + pretermT + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT))
 ps_spec2.st <- update(ps_spec2, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 
 set.seed(8)
@@ -356,21 +358,29 @@ dev.off()
 plot.balance(bal_2.wr, longcovnames=cov_names)
 
 
-# Treatment effect without replacement
-te_spec2 <- update(ps_spec2, ppvtr.36 ~ treat + .)
+# Treatment effect
+te_spec2 <- formula(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + age + momage + sex + first + preterm + dayskidh + bw)
 set.seed(8)
+# MwoR
 reg_ps2 <- stan_glm(te_spec2, data=matched2, algorithm='optimizing')
+# MwR
+reg_ps2.design <- svydesign(ids=~1, weights=matches2_wr$cnts, data=cc2)
+reg_ps2.wr <- svyglm(te_spec2, design=reg_ps2.design, data=cc2)
+
 summary(reg_ps2)['treat', 1:2]
-# Treatment effect with replacement
-reg_ps2_design <- svydesign(ids=~1, weights=~matches2_wr$cnts, data=cc2)
-reg_ps2.wr <- svyglm(te_spec2, design=reg_ps2_design, data=cc2)
 summary(reg_ps2.wr)$coef['treat', 1:2]
 
-# States
-te_spec2.st <- update(ps_spec2.st, ppvtr.36 ~ treat + .)
+
+# Geographic information using
+te_spec2.st <- update(te_spec2, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 set.seed(8)
+# MwoR
 reg_ps2.st <- stan_glm(te_spec2.st, data=matched2.st, algorithm='optimizing')
+reg_ps2.st_design <- svydesign(ids=~1, weights=matches2_wr.st$cnts, data=cc2)
+reg_ps2.st.wr <- svyglm(te_spec2.st, design=reg_ps2.st_design, data=cc2)
+
 summary(reg_ps2.st)['treat', 1:2]
+summary(reg_ps2.st.wr)$coef['treat', 1:2]
 
 
 ############################################
