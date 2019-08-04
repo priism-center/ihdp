@@ -326,22 +326,14 @@ cc2$pretermT = (cc2$preterm+8)^2
 cc2$momageT = (cc2$momage^2)
 
 ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT + pretermT + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT))
-ps_spec2.st <- update(ps_spec2, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 
 set.seed(8)
 ps_fit_2 <- stan_glm(ps_spec2, family=binomial(link="logit"), data=cc2, algorithm='optimizing')
-set.seed(8)
-ps_fit_2.st <- stan_glm(ps_spec2.st, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
 pscores_2 <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
 matches2 <- matching(z=cc2$treat, score=pscores_2, replace=FALSE)
 matched2 <- cc2[matches2$match.ind,]
 matches2_wr <- matching(z=cc2$treat, score=pscores_2, replace=TRUE)
-
-pscores_2.st <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
-matches2.st <- matching(z=cc2$treat, score=pscores_2.st, replace=FALSE)
-matched2.st <- cc2[matches2.st$match.ind,]
-matches2_wr.st <- matching(z=cc2$treat, score=pscores_2.st, replace=TRUE)
 
 bal_2 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2$cnts, estimand='ATT')
 bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
@@ -371,12 +363,23 @@ summary(reg_ps2)['treat', 1:2]
 summary(reg_ps2.wr)$coef['treat', 1:2]
 
 
-# Geographic information using
+# Geographic information using ps_spec2
+ps_spec2.st <- update(ps_spec2, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
+
+set.seed(8)
+ps_fit_2.st <- stan_glm(ps_spec2.st, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+
+pscores_2.st <- apply(posterior_linpred(ps_fit_2.st, type='link'), 2, mean)
+matches2.st <- matching(z=cc2$treat, score=pscores_2.st, replace=FALSE)
+matched2.st <- cc2[matches2.st$match.ind,]
+matches2.st_wr <- matching(z=cc2$treat, score=pscores_2.st, replace=TRUE)
+
+# Treatment effect estimate
 te_spec2.st <- update(te_spec2, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 set.seed(8)
 # MwoR
 reg_ps2.st <- stan_glm(te_spec2.st, data=matched2.st, algorithm='optimizing')
-reg_ps2.st_design <- svydesign(ids=~1, weights=matches2_wr.st$cnts, data=cc2)
+reg_ps2.st_design <- svydesign(ids=~1, weights=matches2.st_wr$cnts, data=cc2)
 reg_ps2.st.wr <- svyglm(te_spec2.st, design=reg_ps2.st_design, data=cc2)
 
 summary(reg_ps2.st)['treat', 1:2]
