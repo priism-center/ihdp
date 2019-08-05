@@ -1,0 +1,56 @@
+---
+title: "IHDP"
+output: 
+  flexdashboard::flex_dashboard:
+    theme: lumen
+    source_code: embed
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=TRUE)
+knitr::opts_chunk$set(include=TRUE)
+knitr::opts_chunk$set(message=FALSE)
+knitr::opts_chunk$set(warning=FALSE)
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=80), tidy=TRUE)
+knitr::opts_knit$set(root.dir='..')
+```
+
+```{r library, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(plotly)
+library(kableExtra)
+library(cobalt)
+library(rstanarm)
+
+source('library/library.r')
+source('library/matching.R')
+source('library/balance.R')
+source('library/estimation.R')
+```
+
+```{r plotting, include=FALSE}
+theme_set(theme_minimal())
+
+# treat
+treat_vals <- c(`0`='darkgrey', `1`='red4')
+treat_labs <- c(`0`='Control', `1`='Treatment')
+treat_col <- scale_color_manual('', values=treat_vals, labels=treat_labs)
+treat_fill <- scale_fill_manual('', values=treat_vals, labels=treat_labs)
+```
+
+```{r data, include=FALSE}
+ihdp <- readRDS('data/ihdp.rds')
+```
+
+
+
+Covariates
+=======================================================================
+```{r, child='ihdp_covariates.rmd'}
+```
+
+
+
+Propensity Score
+=======================================================================

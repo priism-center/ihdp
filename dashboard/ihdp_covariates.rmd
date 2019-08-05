@@ -1,0 +1,42 @@
+```{r, include=FALSE}
+covs_bin <- c('b.marr', 'booze', 'bwg', 'cig', 'first', 'hispanic', 'hs', 'ltcoll', 'lths', 'prenatal', 'sex', 'work.dur')
+covs_cont <- c('age', 'bw', 'dayskidh', 'income', 'momage', 'preterm')
+covs_st <- c('st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st48', 'st53')
+```
+
+
+
+Column
+-----------------------------------------------------------------------
+
+### Binary Plots
+
+```{r, echo=FALSE, results='asis'}
+for (cov in covs_bin) {
+    print(
+    ggplot(ihdp, aes(ppvtr.36, fill=factor(treat))) +
+        geom_histogram(alpha=0.6, bins=20, position='stack') +
+        facet_wrap(~factor(get(cov))) +
+        treat_fill +
+        labs(title=cov)
+    )
+}
+```
+
+
+
+Column
+-----------------------------------------------------------------------
+
+### Continuous Plots
+
+```{r, echo=FALSE, results='asis'}
+for (cov in covs_cont) {
+    print(
+    ggplot(ihdp, aes(get(cov), ppvtr.36, col=factor(treat))) +
+        geom_point(alpha=0.4) +
+        treat_col +
+        labs(x=cov)
+    )
+}
+```
