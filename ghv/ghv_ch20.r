@@ -88,10 +88,11 @@ covs.nr.st <- c(covs.nr, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st53')
 
 
 ps_spec <- formula(treat ~ bw + bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + preterm + momage + dayskidh)
+ps_spec.st <- update(ps_spec, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 
 set.seed(20)
 ps_fit_1 <- stan_glm(ps_spec, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
-ps_fit_1.st <- stan_glm(update(ps_spec, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53), family=binomial(link='logit'), data=cc2, algorithm='optimizing')
+ps_fit_1.st <- stan_glm(ps_spec.st, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
 pscores <- apply(posterior_linpred(ps_fit_1, type='link'), 2, mean)
 pscores.st <- apply(posterior_linpred(ps_fit_1.st, type='link'), 2, mean)
@@ -104,10 +105,10 @@ matches.wr <- matching(z=cc2$treat, score=pscores, replace=TRUE)
 wts.wr <- matches.wr$cnts
 
 matches.st <- matching(z=cc2$treat, score=pscores.st, replace=FALSE)
-matched.st <- cc2[matches$match.ind,]
+matched.st <- cc2[matches.st$match.ind,]
 
-matches.wr.st <- matching(z=cc2$treat, score=pscores.st, replace=TRUE)
-wts.wr.st <- matches.wr$cnts
+matches.st.wr <- matching(z=cc2$treat, score=pscores.st, replace=TRUE)
+wts.st.wr <- matches.st.wr$cnts
 
 # Balance plots for all covariattes, not just those used for pscore spec
 bal_nr <- balance(rawdata=cc2[,covs], treat=cc2$treat, matched=matches$cnts, estimand='ATT')
@@ -286,19 +287,19 @@ summary(reg_ps.wr)['treat', 1:2]
 summary(reg_ps.wr_svy)$coef['treat', 1:2]
 
 # Geographic information, covs_nr.st
-te_spec_nr.st <- update(te_spec_nr, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
+te_spec_nr.st <- update(ps_spec.st, ppvtr.36 ~ treat + . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 # treatment effect without replacement
 set.seed(20)
 reg_ps.st <- stan_glm(te_spec_nr.st, data=cc2[matches.st$match.ind,], algorithm='optimizing')
 # treatment effect with replacement
 set.seed(20)
-reg_ps.wr.st <- stan_glm(te_spec_nr.st, data=cc2, weight=matches.wr.st$cnts, algorithm='optimizing')
-ps_fit_1_design.st <- svydesign(ids=~1, weights=matches.wr.st$cnts, data=cc2)
-reg_ps.wr_svy.st <- svyglm(te_spec_nr.st, design=ps_fit_1_design.st, data=cc2)
+reg_ps.st.wr <- stan_glm(te_spec_nr.st, data=cc2, weight=matches.st.wr$cnts, algorithm='optimizing')
+ps_fit_1.st_design <- svydesign(ids=~1, weights=matches.st.wr$cnts, data=cc2)
+reg_ps.st.wr_svy <- svyglm(te_spec_nr.st, design=ps_fit_1.st_design, data=cc2)
 
 summary(reg_ps.st)['treat', 1:2]
-summary(reg_ps.wr.st)['treat', 1:2]
-summary(reg_ps.wr_svy.st)$coef['treat', 1:2]
+summary(reg_ps.st.wr)['treat', 1:2]
+summary(reg_ps.st.wr_svy)$coef['treat', 1:2]
 
 
 
