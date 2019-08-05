@@ -1,16 +1,15 @@
 # Generate code and figures for GHV CH 20
-# Only reproducing code and figures dependent on change in propensity score model, covariate selection, treatment effect estimation
+
 ############################################
 
 library(rstan)
     options(mc.cores=parallel::detectCores())
-library(rstanarm)
 library(arm)
+library(rstanarm)
 library(survey)
 source('library/matching.R')
 source('library/balance.R')
 source('library/estimation.R')
-source('library/library.r')
 
 ############################################
 
