@@ -157,11 +157,12 @@ dev.off()
 # separate balance plots for continuous and binary variables
 # Figure 20.13
 
+
 {
 pdf('outputs/ghv_ch20/balance.cont.binary.AZC.pdf', width=10, height=6)
 par(mfrow=c(1,2))
 mar1 <- c(5, 4, 6, 2)
-mar2 <- c(18, 3, 6, 4)
+mar2 <- c(5, 3, 6, 4)
 # plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='binary', mar=c(2, 4, 5, 4))
 pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==TRUE,4]
 pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==TRUE,4]
@@ -195,10 +196,16 @@ axis(2, at=1:K, labels=longcovnames[1:K],
 # plot.balance(bal_nr.wr, longcovnames=cov_names, which.cov='cont', mar=c(1, 4, 5, 4))
 pts <- bal_nr.wr$diff.means.raw[bal_nr.wr$binary==FALSE,4]
 pts2 <- bal_nr.wr$diff.means.matched[bal_nr.wr$binary==FALSE,4]
+# AZC: hack to fix spacing of binary covariates against x axis
+# the spacing of how spaced apart the ticks are changes as the number of covariates change. It's frustratingly hard, maybe impossible, to get the spacing to match between the continuous and binary plots with different number of covariates in each, so, I'll add fake data that won't show up
+pts <- c(pts, rep(NA, 7))
+pts2 <- c(pts2, rep(NA, 7))
 K <- length(pts)
 idx <- 1:K
 main <- 'Absolute Standardized Difference in Means'
 longcovnames <- cov_names[bal_nr.wr$binary==FALSE]
+# add extra names to match above
+longcovnames <- c(longcovnames, rep('', 7))
 
 mar <- mar2
 par(mar=mar)
@@ -215,11 +222,11 @@ plot(c(pts,pts2), c(idx,idx),
     bty='n', xlab='', ylab='',
     xaxt='n', yaxt='n', type='n',
     main=main, cex.main=1.2)
-abline(v=0, lty=2)
+segments(x0=0, y0=13, x1=0, y1=7.5, lty=2)
 points(pts, idx, cex=1)
 points(pts2, idx, pch=19, cex=1)
 axis(3)
-axis(2, at=1:K, labels=longcovnames[1:K],
+axis(2, at=8:12, labels=longcovnames[8:12],
     las=2, hadj=1, lty=0, cex.axis=1)
 dev.off()
 }
