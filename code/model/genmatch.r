@@ -2,6 +2,7 @@
 
 ############################################
 # Genetic matching on IHDP data
+# Rscript script to run MwoR; pass in any argument to run MwR
 
 ############################################
 
@@ -33,6 +34,8 @@ cl <- makePSOCKcluster(detectCores(), type='PSOCK')
 
 X <- setdiff(all.vars(ps_form), 'treat')
 
-mgen_mod <- GenMatch(Tr=cc2$treat, X=cc2[,X], BalanceMatrix=cc2[,X], pop.size=1000, cluster=cl, replace=REP)
+mgen_mod <- GenMatch(Tr=cc2$treat, X=cc2[,X], BalanceMatrix=cc2[,X], estimand='ATT', pop.size=1000, cluster=cl, replace=REP)
+
+stopCluster(cl)
 
 saveRDS(mgen_mod, model_file)
