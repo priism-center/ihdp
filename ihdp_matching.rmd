@@ -57,7 +57,7 @@ Raw data balance
 ========================
 
 ```{r, include=TRUE}
-ps_form <- formula(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw + preterm + momage + dayskidh)
+ps_form <- formula(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + age + bw + preterm + momage + dayskidh)
 
 bal.tab(ps_form, data=cc2, estimand='ATT', continuous='std', m.threshold=.1, v.threshold=1.1)
 ```
