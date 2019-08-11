@@ -332,7 +332,7 @@ cc2$dayskidT = log(cc2$dayskidh+1)
 cc2$pretermT = (cc2$preterm+8)^2
 cc2$momageT = (cc2$momage^2)
 
-ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + age + momage + sex + first + bw + dayskidT + pretermT + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT))
+ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + momage + sex + first + bw + dayskidT + pretermT + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT))
 
 set.seed(8)
 ps_fit_2 <- stan_glm(ps_spec2, family=binomial(link="logit"), data=cc2, algorithm='optimizing')
@@ -358,7 +358,7 @@ plot.balance(bal_2.wr, longcovnames=cov_names)
 
 
 # Treatment effect
-te_spec2 <- formula(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + age + momage + sex + first + preterm + dayskidh + bw)
+te_spec2 <- formula(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + dayskidh + bw)
 set.seed(8)
 # MwoR
 reg_ps2 <- stan_glm(te_spec2, data=matched2, algorithm='optimizing')
@@ -503,7 +503,9 @@ sd.table3 <- round(data.frame(
 
 # genetic matching
 mgen_1 <- readRDS('models/mgen_1.rds')
+mgen_1.wr <- readRDS('models/mgen_1_wr.rds')
 matched_mgen <- cc2[c(mgen_1$matches[,1], mgen_1$matches[,2]),]
+matched_wr_mgen <- cc2[c(mgen_1.wr$matches[,1], mgen_1.wr$matches[,2]),]
 
 sds.mwor_mgen <- sapply(cont_vars, function(x){
     tapply(matched_mgen[,x], matched_mgen$treat, sd)
@@ -522,3 +524,9 @@ sd.table4 <- round(data.frame(
     unmatched=sd.ratios4[[1]],
     MWOR=sd.ratios4[[2]],
     MWR=sd.ratios4[[3]]), 2)
+#          unmatched MWOR  MWR
+# bw            0.50 0.65 0.74
+# preterm       0.95 0.77 0.90
+# dayskidh      2.07 0.81 0.65
+# age           0.07 0.08 0.09
+# momage        1.86 1.70 1.88
