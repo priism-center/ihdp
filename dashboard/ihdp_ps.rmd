@@ -1,0 +1,13 @@
+```{r}
+# transformed variables
+ihdp <- ihdp %>%
+    mutate(
+        bwT=(bw-1500)^2,
+        dayskidT=log(dayskidh+1),
+        pretermT=(preterm+8)^2,
+        momageT=momage^2)
+```
+
+```{r}
+
+```
