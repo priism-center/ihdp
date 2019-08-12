@@ -34,7 +34,8 @@ Column
 for (cov in covs_cont) {
     print(
     ggplot(ihdp, aes(get(cov), ppvtr.36, col=factor(treat))) +
-        geom_point(alpha=0.4) +
+        geom_smooth(method='loess', alpha=0.2) +
+        geom_point(alpha=0.4, pch=20) +
         treat_col +
         labs(x=cov)
     )
