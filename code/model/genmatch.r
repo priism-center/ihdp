@@ -28,7 +28,7 @@ load('data/cc2.Rdata')
 # Covs to adjust
 ps_form <- formula(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53 + bw + preterm + momage + dayskidh + income)
 # Covs to balance
-bal_form <- update(covs, . ~ . - st5 - st9 - st12 - st25 - st36 - st42 - st48 - st53)
+bal_form <- update(ps_form, . ~ . - st5 - st9 - st12 - st25 - st36 - st42 - st48 - st53)
 
 ############################################
 
