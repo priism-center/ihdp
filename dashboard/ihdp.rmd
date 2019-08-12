@@ -22,6 +22,7 @@ library(plotly)
 library(kableExtra)
 library(cobalt)
 library(rstanarm)
+library(survey)
 
 source('library/library.r')
 source('library/matching.R')
@@ -47,10 +48,12 @@ ihdp <- readRDS('data/ihdp.rds')
 
 Covariates
 =======================================================================
-```{r, child='ihdp_covariates.rmd'}
+```{r, child='ihdp_covs.rmd'}
 ```
 
 
 
 Propensity Score
 =======================================================================
+```{r, child='ihdp_ps.rmd'}
+```
