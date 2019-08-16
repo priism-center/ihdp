@@ -27,11 +27,10 @@ covs.nr.st <- c(covs.nr, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st53')
 
 ############################################
 
-psEst2 <- function(te_spec, dataMWOR=matched, matchesWR=matches_wr, data=cc2){
+psEst2 <- function(te_spec, dataMWOR=matched, mwr_design=te_reg_wr_design, data=cc2){
     set.seed(8)
     te_reg <- stan_glm(te_spec, data=matched, algorithm='optimizing')
-    te_reg_wr_design <- svydesign(ids=~1, weights=matches_wr$cnts, data=data)
-    te_reg_wr <- svyglm(te_spec, design=te_reg_wr_design, data=data)
+    te_reg_wr <- svyglm(te_spec, design=mwr_design, data=data)
 
     mwor <- summary(te_reg)['treat', 1:2]
     mwr <- summary(te_reg_wr)$coef['treat', 1:2]
@@ -51,6 +50,8 @@ set.seed(8)
     matches_wr <- matching(z=cc2$treat, score=pscores, replace=TRUE)
     matched <- cc2[matches$match.ind,]
     matched_wr <- cc2[matches_wr$match.ind,]
+
+    te_reg_wr_design <- svydesign(ids=~1, weights=matches_wr$cnts, data=data)
 
 ############################################
 n <- length(covs.nr)
