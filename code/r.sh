@@ -18,10 +18,10 @@ REPO=/home/azc211/github/ihdp
 cd $REPO
 
 # Command line arguments
-export R_SCRIPT=$1
+export SCRIPT=$1
 shift
 export ARGS=$@
 
 # Run program
-echo "R $R_SCRIPT $ARGS"
-R $R_SCRIPT $ARGS
+echo "R $SCRIPT $ARGS"
+singularity exec /beefgs/work/public/singularity/r-3.6.1.sif Rscript $SCRIPT $ARGS
