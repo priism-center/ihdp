@@ -62,9 +62,9 @@ covs_bal_st <- c(covs_bal, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st48',
 # Covariates for propensity score estimation
 covs_ps <- c('bw', 'preterm', 'dayskidh', 'sex', 'first', 'bwg', 'black', 'hispanic', 'b.marr', 'lths', 'hs', 'ltcoll', 'work.dur', 'prenatal', 'momage', 'income', 'bwT', 'dayskidT', 'pretermT', 'momageT', 'income')
 # Create all two way two-way interactions
-n <- length(covs)
+n <- length(covs_ps)
 idx <- unlist(lapply(1:n, function(i) combn(1:n, 2, simplify=FALSE)),recursive=FALSE)
-covs_int <- sapply(idx, function(i) paste(covs[i], collapse=':'))
+covs_int <- sapply(idx, function(i) paste(covs_ps[i], collapse=':'))
 
 
 ############################################
