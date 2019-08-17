@@ -10,7 +10,8 @@
 
 # Load modules
 module purge
-module load r/intel/3.6.0
+# Make sure bashrc is executed
+source ~/.bashrc
 
 # cd to repo directory
 REPO=/home/azc211/github/ihdp
@@ -22,5 +23,5 @@ shift
 export ARGS=$@
 
 # Run program
-echo "Rscript $R_SCRIPT $ARGS"
-Rscript $R_SCRIPT $ARGS
+echo "R $R_SCRIPT $ARGS"
+R $R_SCRIPT $ARGS
