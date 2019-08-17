@@ -71,7 +71,7 @@ covs_int <- sapply(idx, function(i) paste(covs_ps[i], collapse=':'))
 # Create all propensity score specifications
 covs_1 <- c(covs_ps, covs_int)
 
-n <- length(cov_1)
+n <- length(covs_1)
 
 idx <- unlist(
     lapply(1:n, function(i)
