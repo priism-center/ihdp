@@ -78,12 +78,20 @@ idx <- unlist(
         combn(1:n, i, simplify=FALSE)
     ), recursive=FALSE)
 
-ps_specs <- sapply(idx, function(i)
-    paste0('treat~', paste(covs_1[i], collapse='+'))
-    )
+if (file.exists('outputs/ps_specs.rds')){
+    ps_specs <- readRDS('outputs/ps_specs.rds')
+} else {
+    ps_specs <- sapply(idx, function(i)
+        paste0('treat~', paste(covs_1[i], collapse='+'))
+        )
+}
 
 # Estimation
-ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=detectCores())
+if (file.exists('outputs/ps_bals.rds')){
+    ps_bals <- readRDS('outputs/ps_bals.rds')
+} else {
+    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=detectCores())
+}
 
 # Save everything
 saveRDS(ps_specs, 'outputs/ps_specs.rds')
