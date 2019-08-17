@@ -24,4 +24,4 @@ export ARGS=$@
 
 # Run program
 echo "R $SCRIPT $ARGS"
-singularity exec /beefgs/work/public/singularity/r-3.6.1.sif Rscript $SCRIPT $ARGS
+singularity exec /beegfs/work/public/singularity/r-3.6.1.sif Rscript $SCRIPT $ARGS
