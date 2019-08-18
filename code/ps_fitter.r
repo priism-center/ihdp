@@ -60,7 +60,7 @@ covs_bal <- c('bw', 'bwg', 'preterm', 'dayskidh', 'sex', 'first', 'black', 'hisp
 covs_bal_st <- c(covs_bal, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st48', 'st53')
 
 # Covariates for propensity score estimation
-covs_ps <- c('bw', 'preterm', 'dayskidh', 'sex', 'first', 'bwg', 'black', 'hispanic', 'b.marr', 'lths', 'hs', 'ltcoll', 'work.dur', 'prenatal', 'momage', 'income', 'bwT', 'dayskidT', 'pretermT', 'momageT', 'income')
+covs_ps <- c('bw', 'preterm', 'dayskidh', 'sex', 'first', 'black', 'hispanic', 'b.marr', 'lths', 'hs', 'ltcoll', 'work.dur', 'prenatal', 'momage', 'income', 'bwT', 'dayskidT', 'pretermT', 'momageT', 'income')
 # Create all two way two-way interactions
 n <- length(covs_ps)
 idx <- unique(unlist(lapply(1:n, function(i) combn(1:n, 2, simplify=FALSE)),recursive=FALSE))
@@ -75,11 +75,11 @@ gc()
 if (file.exists('outputs/ps_specs.rds')){
     ps_specs <- readRDS('outputs/ps_specs.rds')
 } else {
-    covs_1 <- c(covs_ps, 'black:bw', 'black:preterm', 'black:dayskidhT', 'b.marr:bw', 'b.marr:preterm', 'b.marr:dayskidhT', 'b.marr:black', 'bw:income', 'black:income')
+    covs_1 <- c(covs_ps, 'bw:as.factor(educ)', 'black:preterm', 'black:dayskidhT', 'b.marr:bw', 'b.marr:preterm', 'b.marr:dayskidhT', 'bw:income')
     n <- length(covs_1)
 
     idx <- unlist(
-        mclapply(6:n, function(i)
+        mclapply(8:12, function(i)
                 combn(1:n, i, simplify=FALSE),
             mc.cores=detectCores()),
         recursive=FALSE)
