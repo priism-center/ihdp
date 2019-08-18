@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --time=5:00:00
 #SBATCH --mem=16GB
-#SBATCH --nodes=10
+#SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --output=slurm/slurm_%j.out
