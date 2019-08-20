@@ -50,7 +50,7 @@ psBal <- function(spec, data=cc2, covs=covs_bal, mt=0.1, vt=1.1){
 ############################################
 # Data
 
-cc2 <- readRDS('data/ihdp.rds')
+load('data/cc2.Rdata')
 
 cc2$bwT = (cc2$bw-1500)^2
 cc2$dayskidT = log(cc2$dayskidh+1)
@@ -71,7 +71,7 @@ covs_ps <- c('bw', 'preterm', 'dayskidh', 'sex', 'first', 'black', 'hispanic', '
 if (file.exists('outputs/ps_specs.rds')){
     ps_specs <- readRDS('outputs/ps_specs.rds')
 } else {
-    covs_1 <- c(covs_ps, 'bw:as.factor(educ)', 'black:preterm', 'black:dayskidhT', 'b.marr:bw', 'b.marr:preterm', 'b.marr:dayskidhT', 'bw:income')
+    covs_1 <- c(covs_ps, 'bw:as.factor(educ)', 'black:preterm', 'black:dayskidT', 'b.marr:bw', 'b.marr:preterm', 'b.marr:dayskidT', 'bw:income')
     n <- length(covs_1)
 
     idx <- unlist(
@@ -79,9 +79,11 @@ if (file.exists('outputs/ps_specs.rds')){
                 combn(1:n, i, simplify=FALSE),
             mc.cores=detectCores()),
         recursive=FALSE)
-    ps_specs <- mclapply(idx, function(i)
-            paste0('treat~', paste(covs_1[i], collapse='+')),
-        mc.cores=detectCores())
+    ps_specs <- unlist(
+        mclapply(idx, function(i)
+                paste0('treat~', paste(covs_1[i], collapse='+')),
+            mc.cores=detectCores())
+        )
     rm(idx)
     gc()
     saveRDS(ps_specs, 'outputs/ps_specs.rds')
@@ -91,6 +93,6 @@ if (file.exists('outputs/ps_specs.rds')){
 if (file.exists('outputs/ps_bals.rds')){
     ps_bals <- readRDS('outputs/ps_bals.rds')
 } else {
-    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec[[1]]), mc.cores=detectCores())
+    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=detectCores())
     saveRDS(ps_bals, 'outputs/ps_bals.rds')
 }
