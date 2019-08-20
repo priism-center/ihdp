@@ -5,8 +5,8 @@
 
 library(rstan)
 library(parallel)
-    options(mc.cores=parallel::detectCores())
 library(rstanarm)
+    options(mc.cores=parallel::detectCores())
 library(survey)
 library(cobalt)
 source('library/matching.R')
@@ -28,8 +28,10 @@ source('library/estimation.R')
 psBal <- function(spec, data=cc2, covs=covs_bal, mt=0.1, vt=1.1){
     set.seed(8)
 
-    ps_fit <- stan_glm(spec, data=data, algorithm='optimizing')
-    pscores <- apply(posterior_linpred(ps_fit, type='link'), 2, mean)
+    # ps_fit <- stan_glm(spec, data=data, family=binomial(link='logit'), algorithm='optimizing')
+    # pscores <- apply(posterior_linpred(ps_fit, type='link'), 2, mean)
+    ps_fit <- glm(spec, data=data, family=binomial(link='logit'))
+    pscores <- ps_fit$fitted.values
     matches <- matching(z=cc2$treat, score=pscores, replace=FALSE)
     matches_wr <- matching(z=cc2$treat, score=pscores, replace=TRUE)
     matched <- data[matches$match.ind,]
@@ -95,6 +97,6 @@ if (file.exists('outputs/ps_specs.rds')){
 if (file.exists('outputs/ps_bals.rds')){
     ps_bals <- readRDS('outputs/ps_bals.rds')
 } else {
-    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=detectCores())
+    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec[[1]]), mc.cores=detectCores())
     saveRDS(ps_bals, 'outputs/ps_bals.rds')
 }
