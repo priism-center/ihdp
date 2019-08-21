@@ -17,11 +17,7 @@ source('library/estimation.R')
 ############################################
 # Command Args
 args <- commandArgs(trailingOnly=TRUE)
-if (!is.numeric(args)){
-    stop('must pass an integer!!!')
-} else {
-    ps_i <- args[[1]]
-}
+ps_i <- as.numeric(args[1])
 
 ############################################
 # Functions
