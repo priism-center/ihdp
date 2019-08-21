@@ -88,7 +88,7 @@ if (file.exists(ps_spec_file)){
     ps_specs <- unlist(
         mclapply(idx, function(i)
                 paste0('treat~', paste(covs_1[i], collapse='+')),
-            mc.cores=detectCores())
+            mc.cores=20)
         )
     rm(idx)
     gc()
@@ -99,6 +99,6 @@ if (file.exists(ps_spec_file)){
 if (file.exists(ps_bal_file)){
     ps_bals <- readRDS(ps_bal_file)
 } else {
-    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=detectCores())
+    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=20)
     saveRDS(ps_bals, ps_bal_file)
 }
