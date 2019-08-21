@@ -3,9 +3,9 @@
 ############################################
 
 library(rstan)
-    options(mc.cores=parallel::detectCores())
 library(arm)
 library(rstanarm)
+    options(mc.cores=parallel::detectCores())
 library(survey)
 source('library/matching.R')
 source('library/balance.R')
@@ -102,6 +102,7 @@ matched <- cc2[matches$match.ind,]
 
 matches.wr <- matching(z=cc2$treat, score=pscores, replace=TRUE)
 wts.wr <- matches.wr$cnts
+matched.wr <- cc2[matches.wr$match.ind,]
 
 matches.st <- matching(z=cc2$treat, score=pscores.st, replace=FALSE)
 matched.st <- cc2[matches.st$match.ind,]
@@ -332,6 +333,7 @@ cc2$dayskidT = log(cc2$dayskidh+1)
 cc2$pretermT = (cc2$preterm+8)^2
 cc2$momageT = (cc2$momage^2)
 
+# New ps-spec from psFitR(21)
 ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + momage + sex + first + bw + dayskidT + pretermT + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT) + bw*income)
 
 set.seed(8)
@@ -341,6 +343,7 @@ pscores_2 <- apply(posterior_linpred(ps_fit_2, type='link'), 2, mean)
 matches2 <- matching(z=cc2$treat, score=pscores_2, replace=FALSE)
 matched2 <- cc2[matches2$match.ind,]
 matches2_wr <- matching(z=cc2$treat, score=pscores_2, replace=TRUE)
+matched2_wr <- cc2[matches2_wr$match.ind,]
 
 bal_2 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2$cnts, estimand='ATT')
 bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
