@@ -96,7 +96,7 @@ if (file.exists(ps_spec_file)){
 }
 
 # Estimation
-if (file.exists(ps_bal_file){
+if (file.exists(ps_bal_file)){
     ps_bals <- readRDS(ps_bal_file)
 } else {
     ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=detectCores())
