@@ -94,7 +94,14 @@ summary(reg_ps2.wr)$coef['treat', 1:2]
 # ps_fit_2 i21
 
 # ps_specs_i21[242260] MwoR: 10.7 (1.5), MwR: 5.1 (2.6)
-ps_spec_i21 <- formula(treat~preterm+dayskidh+sex+first+black+hispanic+lths+hs+ltcoll+work.dur+prenatal+momage+income+dayskidT+pretermT+income+black:preterm+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT)
+# ps_spec_i21 <- formula(treat~preterm+dayskidh+sex+first+black+hispanic+lths+hs+ltcoll+work.dur+prenatal+momage+income+dayskidT+pretermT+income+black:preterm+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT)
+# ps_specs_i21 [242260] MwoR: 10.7 (1.5), MwR: 5.1 (2.6)
+# ps_spec_i21 <- formula(treat~preterm+dayskidh+sex+first+black+hispanic+lths+hs+ltcoll+work.dur+prenatal+momage+income+dayskidT+pretermT+income+black:preterm+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT)
+# ps_specs_i21[257460] MwoR: 11.0 (1.5), MwR: 8.1 (2.2)
+# winner?
+ps_spec_i21 <- formula(treat~preterm+dayskidh+sex+black+hispanic+b.marr+lths+hs+ltcoll+work.dur+prenatal+income+dayskidT+pretermT+momageT+income+black:preterm+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT)
+# ps_specs_i21 [95249] mwr balanced 20 covs. MwoR: 10.0 (1.5), MwR: 10.6 (2.3)
+# ps_spec_i21 <- formula(treat~bw+preterm+dayskidh+sex+hispanic+b.marr+lths+hs+ltcoll+work.dur+prenatal+momage+income+bwT+pretermT+income+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT+bw:income)
 
 set.seed(8)
 ps_fit_i21 <- stan_glm(ps_spec_i21, family=binomial(link="logit"), data=cc2, algorithm='optimizing')
@@ -103,7 +110,8 @@ pscores_i21 <- apply(posterior_linpred(ps_fit_i21, type='link'), 2, mean)
 matches_i21 <- matching(z=cc2$treat, score=pscores_i21, replace=FALSE)
 matched_i21 <- cc2[matches_i21$match.ind,]
 matches_i21_wr <- matching(z=cc2$treat, score=pscores_i21, replace=TRUE)
-matched_i21_wr <- cc2[v$match.ind,]
+matched_i21_wr <- cc2[matches_i21_wr$match.ind,]
+
 
 set.seed(8)
 # MwoR
@@ -128,7 +136,7 @@ pscores_i22 <- apply(posterior_linpred(ps_fit_i22, type='link'), 2, mean)
 matches_i22 <- matching(z=cc2$treat, score=pscores_i22, replace=FALSE)
 matched_i22 <- cc2[matches_i22$match.ind,]
 matches_i22_wr <- matching(z=cc2$treat, score=pscores_i22, replace=TRUE)
-matched_i22_wr <- cc2[v$match.ind,]
+matched_i22_wr <- cc2[matches_i22_wr$match.ind,]
 
 set.seed(8)
 # MwoR
@@ -153,7 +161,7 @@ pscores_i23 <- apply(posterior_linpred(ps_fit_i23, type='link'), 2, mean)
 matches_i23 <- matching(z=cc2$treat, score=pscores_i23, replace=FALSE)
 matched_i23 <- cc2[matches_i23$match.ind,]
 matches_i23_wr <- matching(z=cc2$treat, score=pscores_i23, replace=TRUE)
-matched_i23_wr <- cc2[v$match.ind,]
+matched_i23_wr <- cc2[matches_i23_wr$match.ind,]
 
 set.seed(8)
 # MwoR
@@ -170,8 +178,12 @@ summary(reg_ps_i23.wr)$coef['treat', 1:2]
 
 bal_ihdp(matched)
 bal_ihdp(matched2)
+bal_ihdp(matched_i21)
 bal_ihdp(matched_i22)
+bal_ihdp(matched_i23)
 
 bal_ihdp(matched.wr)
 bal_ihdp(matched2_wr)
+bal_ihdp(matched_i21_wr)
 bal_ihdp(matched_i22_wr)
+bal_ihdp(matched_i23_wr)
