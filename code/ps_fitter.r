@@ -83,9 +83,9 @@ if (file.exists('outputs/ps_specs.rds')){
     idx <- unlist(
             mclapply(8:12, function(i) combn(1:n, i, simplify=FALSE)),
         recursive=FALSE)
-    ps_specs <- unlist(
+    ps_specs <- unique(unlist(
             mclapply(idx, function(i) paste0('treat~', paste(covs_1[i], collapse='+')))
-        )
+        ))
     rm(idx)
     gc()
     saveRDS(ps_specs, 'outputs/ps_specs.rds')

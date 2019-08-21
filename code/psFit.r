@@ -92,9 +92,9 @@ if (file.exists(ps_spec_file)){
     n <- length(covs_1)
 
     idx <- combn(1:n, ps_i, simplify=FALSE)
-    ps_specs <- unlist(
+    ps_specs <- unique(unlist(
             mclapply(idx, function(i) paste0('treat~', paste(covs_1[i], collapse='+')))
-        )
+        ))
     rm(idx)
     gc()
     saveRDS(ps_specs, ps_spec_file)
