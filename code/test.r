@@ -2,7 +2,8 @@
 # Test script
 
 ############################################
+args <- commandArgs(trainlingOnly=TRUE)
 
-df <- data.frame(x=rnorm(10), y=rnorm(10))
-
-saveRDS(df, 'test.rds')
+fileConn <- file('test.txt')
+writeLines(c("Hello World", args), fileconn)
+close(fileConn)
