@@ -7,7 +7,7 @@
 library(rstan)
 library(parallel)
 library(rstanarm)
-    options(mc.cores=parallel::detectCores())
+    options(mc.cores=20)
 library(survey)
 library(cobalt)
 source('library/matching.R')
