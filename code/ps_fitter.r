@@ -6,12 +6,18 @@
 library(rstan)
 library(parallel)
 library(rstanarm)
-    options(mc.cores=20)
 library(survey)
 library(cobalt)
 source('library/matching.R')
 source('library/balance.R')
 source('library/estimation.R')
+
+# Setup cores
+if(Sys.getenv("SLURM_CPUS_PER_TASK") != "") {
+    options(mc.cores=as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")))
+} else {
+  options(mc.cores=parallel::detectCores()-1)
+}
 
 ############################################
 # Functions
@@ -75,14 +81,10 @@ if (file.exists('outputs/ps_specs.rds')){
     n <- length(covs_1)
 
     idx <- unlist(
-        mclapply(8:12, function(i)
-                combn(1:n, i, simplify=FALSE),
-            mc.cores=20),
+            mclapply(8:12, function(i) combn(1:n, i, simplify=FALSE)),
         recursive=FALSE)
     ps_specs <- unlist(
-        mclapply(idx, function(i)
-                paste0('treat~', paste(covs_1[i], collapse='+')),
-            mc.cores=detectCores())
+            mclapply(idx, function(i) paste0('treat~', paste(covs_1[i], collapse='+')))
         )
     rm(idx)
     gc()
@@ -93,6 +95,6 @@ if (file.exists('outputs/ps_specs.rds')){
 if (file.exists('outputs/ps_bals.rds')){
     ps_bals <- readRDS('outputs/ps_bals.rds')
 } else {
-    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=20)
+    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec))
     saveRDS(ps_bals, 'outputs/ps_bals.rds')
 }

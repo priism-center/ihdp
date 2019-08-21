@@ -14,6 +14,13 @@ source('library/matching.R')
 source('library/balance.R')
 source('library/estimation.R')
 
+# Setup cores
+if(Sys.getenv("SLURM_CPUS_PER_TASK") != "") {
+    options(mc.cores=as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")))
+} else {
+  options(mc.cores=parallel::detectCores()-1)
+}
+
 ############################################
 # Command Args
 args <- commandArgs(trailingOnly=TRUE)
@@ -86,9 +93,7 @@ if (file.exists(ps_spec_file)){
 
     idx <- combn(1:n, ps_i, simplify=FALSE)
     ps_specs <- unlist(
-        mclapply(idx, function(i)
-                paste0('treat~', paste(covs_1[i], collapse='+')),
-            mc.cores=20)
+            mclapply(idx, function(i) paste0('treat~', paste(covs_1[i], collapse='+')))
         )
     rm(idx)
     gc()
@@ -99,6 +104,6 @@ if (file.exists(ps_spec_file)){
 if (file.exists(ps_bal_file)){
     ps_bals <- readRDS(ps_bal_file)
 } else {
-    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec), mc.cores=20)
+    ps_bals <- mclapply(ps_specs, function(spec) psBal(spec))
     saveRDS(ps_bals, ps_bal_file)
 }
