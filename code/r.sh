@@ -1,9 +1,9 @@
 #!/bin/bash
-#SBATCH --time=5:00:00
-#SBATCH --mem=16GB
+#SBATCH --time=4:00:00
+#SBATCH --mem=8GB
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=8
 #SBATCH --output=slurm/slurm_%j.out
 #SBATCH --mail-type=END
 #SBATCH --mail-user=azc211@nyu.edu
