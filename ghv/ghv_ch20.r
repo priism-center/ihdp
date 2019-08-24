@@ -22,17 +22,6 @@ cov_names <- c('birth weight', 'weeks preterm', 'days in hospital', 'male', 'fir
 
 # Figure 20.9: See ps_fit_1 MwoR, prior to step 4
 
-# FIGURE 20.11
-# overlap plot
-pdf('outputs/ghv_ch20/age.educ.freq.AZC.f20.11.pdf', height=4, width=6)
-par(mfrow=c(1,2))
-hist(cc2$educ[cc2$treat==0],xlim=c(0,5),main="",border="darkgrey",breaks=c(.5,1.5,2.5,3.5,4.5),mgp=c(2,.5,0),xlab="mother's education",freq=TRUE)
-hist(cc2$educ[cc2$treat==1],xlim=c(0,5),xlab="education",breaks=c(.5,1.5,2.5,3.5,4.5),freq=TRUE,add=T)
-hist(cc2$age[cc2$treat==0],xlim=c(0,110),main="",xlab="age of child (months)",border="darkgrey",breaks=seq(0,110,10),mgp=c(2,.5,0),
-     freq=TRUE)
-hist(cc2$age[cc2$treat==1],xlim=c(0,110),xlab="",breaks=seq(0,110,10),freq=TRUE, add=T)
-dev.off()
-
 
 # FIGURE 20.12
 # table of stratified treatment effect estimate table
@@ -89,7 +78,7 @@ covs.nr.st <- c(covs.nr, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st53')
 ps_spec <- formula(treat ~ bw + bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + preterm + momage + dayskidh + income)
 ps_spec.st <- update(ps_spec, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st48 + st53)
 
-set.seed(20)
+set.seed(1234)
 ps_fit_1 <- stan_glm(ps_spec, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 ps_fit_1.st <- stan_glm(ps_spec.st, family=binomial(link='logit'), data=cc2, algorithm='optimizing')
 
@@ -150,6 +139,20 @@ points(pts2, idx, pch=19, cex=1)
 axis(3)
 axis(2, at=1:K, labels=longcovnames[1:K],
     las=2, hadj=1, lty=0, cex.axis=1.2)
+dev.off()
+}
+
+# FIGURE 20.11
+# overlap plot of mother's education & age of child (months)
+############################################
+{
+pdf('outputs/ghv_ch20/age.educ.freq.AZC.f20.11.pdf', height=4, width=6)
+par(mfrow=c(1,2))
+hist(cc2$educ[cc2$treat==0],xlim=c(0,5),main="",border="darkgrey",breaks=c(.5,1.5,2.5,3.5,4.5),mgp=c(2,.5,0),xlab="mother's education",freq=TRUE)
+hist(cc2$educ[cc2$treat==1],xlim=c(0,5),xlab="education",breaks=c(.5,1.5,2.5,3.5,4.5),freq=TRUE,add=T)
+hist(cc2$age[cc2$treat==0],xlim=c(0,110),main="",xlab="age of child (months)",border="darkgrey",breaks=seq(0,110,10),mgp=c(2,.5,0),
+     freq=TRUE)
+hist(cc2$age[cc2$treat==1],xlim=c(0,110),xlab="",breaks=seq(0,110,10),freq=TRUE, add=T)
 dev.off()
 }
 ############################################
