@@ -6,12 +6,19 @@
 library(rstan)
 library(arm)
 library(rstanarm)
-    options(mc.cores=parallel::detectCores())
 library(survey)
 source('library/matching.R')
 source('library/balance.R')
 source('library/estimation.R')
 source('code/library.r')
+
+# Setup cores
+cpus_per_task <- Sys.getenv('SLURM_CPUS_PER_TASK')
+if(cpus_per_task!=''){
+    options(mc.cores=as.integer(cpus_per_task))
+} else {
+    options(mc.cores=parallel::detectCores() - 1)
+}
 
 ############################################
 
