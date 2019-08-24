@@ -365,6 +365,7 @@ plot.balance(bal_2.wr, longcovnames=cov_names)
 
 # Treatment effect
 te_spec2 <- formula(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + dayskidh + bw + income)
+te_spec2 <- te_spec_nr
 set.seed(8)
 # MwoR
 reg_ps2 <- stan_glm(te_spec2, data=matched2, algorithm='optimizing')
