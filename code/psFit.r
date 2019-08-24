@@ -7,7 +7,6 @@
 library(rstan)
 library(parallel)
 library(rstanarm)
-    options(mc.cores=20)
 library(survey)
 library(cobalt)
 source('library/matching.R')
@@ -15,10 +14,11 @@ source('library/balance.R')
 source('library/estimation.R')
 
 # Setup cores
-if(Sys.getenv("SLURM_CPUS_PER_TASK") != "") {
-    options(mc.cores=as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")))
+cpus_per_task <- Sys.getenv('SLURM_CPUS_PER_TASK')
+if(cpus_per_task!=''){
+    options(mc.cores=as.integer(cpus_per_task))
 } else {
-  options(mc.cores=parallel::detectCores()-1)
+    options(mc.cores=parallel::detectCores() - 1)
 }
 
 ############################################
