@@ -421,7 +421,7 @@ summary(reg_ps.iptw)$coef['treat', 1:2]
 # Section 20.8, Beyond balance in means
 # table of ratio of standard deviations across treatment & control groups for unmatched, MWOR, MWR
 
-cont_vars <- c('bw', 'preterm', 'dayskidh', 'momage', 'income')
+cont_vars <- c('bw', 'preterm', 'dayskidh', 'momage', 'income', 'age')
 sds.um <- sapply(cont_vars, function(x){
     tapply(cc2[,x], cc2$treat, sd)
 })
