@@ -86,6 +86,7 @@ matches2_wr <- matching(z=cc2$treat, score=pscores_2, replace=TRUE)
 matched2_wr <- cc2[matches2_wr$match.ind,]
 
 te_spec2 <- formula(ppvtr.36 ~ treat + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + sex + first + preterm + dayskidh + bw + income)
+
 set.seed(8)
 # MwoR
 reg_ps2 <- stan_glm(te_spec2, data=matched2, algorithm='optimizing')

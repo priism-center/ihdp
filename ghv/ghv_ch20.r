@@ -338,6 +338,10 @@ cc2$momageT = (cc2$momage^2)
 
 # New ps-spec from psFitR(21)
 ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + momage + sex + first + bw + dayskidT + pretermT + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT) + bw*income)
+ps_spec_i21 <- formula(treat ~ preterm +dayskidh +sex +black +hispanic +b.marr +lths +hs +ltcoll +work.dur +prenatal +income +dayskidT +pretermT +momageT +income +black:preterm +black:dayskidT +b.marr:bw +b.marr:preterm +b.marr:dayskidT)
+ps_spec_i21 <- formula(treat~bw+preterm+dayskidh+sex+hispanic+b.marr+lths+hs+ltcoll+work.dur+prenatal+momage+income+bwT+pretermT+income+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT+bw:income)
+ps_spec2 <- ps_spec_i21
+
 
 set.seed(8)
 ps_fit_2 <- stan_glm(ps_spec2, family=binomial(link="logit"), data=cc2, algorithm='optimizing')
@@ -351,7 +355,7 @@ matched2_wr <- cc2[matches2_wr$match.ind,]
 bal_2 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2$cnts, estimand='ATT')
 bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
 
-par(mfrow=c(2,1))
+par(mfrow=c(2,2))
 plot.balance(bal_nr, which.covs='cont', main='ps_fit_1')
 plot.balance(bal_2.wr, which.covs='cont', main='ps_fit_2')
 plot.balance(bal_nr, which.covs='binary', main='ps_fit_1')
@@ -417,7 +421,7 @@ summary(reg_ps.iptw)$coef['treat', 1:2]
 # Section 20.8, Beyond balance in means
 # table of ratio of standard deviations across treatment & control groups for unmatched, MWOR, MWR
 
-cont_vars <- c('bw', 'preterm', 'dayskidh', 'age', 'momage', 'income')
+cont_vars <- c('bw', 'preterm', 'dayskidh', 'momage', 'income')
 sds.um <- sapply(cont_vars, function(x){
     tapply(cc2[,x], cc2$treat, sd)
 })
@@ -487,47 +491,6 @@ sd.table2 <- round(data.frame(
 # age           0.07 0.07 0.08
 # momage        1.86 1.64 1.98
 # income        0.27 0.23 0.78
-
-# CBPS
-library(CBPS)
-
-psfit_cbps <- CBPS(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + momage + sex + first + bw + dayskidT +preterm + pretermT + momage + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT) + bw*income, data=cc2, ATT=1, method='over')
-pscores_cbps <- psfit_cbps$fitted.values
-matches_cbps <- matching(cc2$treat, score=pscores_cbps, replace=FALSE)
-matched_cbps <-  cc2[matches_cbps$match.ind,]
-matches_wr_cbps <- matching(cc2$treat, score=pscores_cbps, replace=TRUE)
-matched_wr_cbps <- cc2[matches_cbps$match.ind,]
-
-sds.mwor_cbps <- sapply(cont_vars, function(x){
-    tapply(matched_cbps[,x], matched_cbps$treat, sd)
-})
-sds.mwr_cbps <- sapply(cont_vars, function(x){
-    tapply(matched_wr_cbps[,x], matched_wr_cbps$treat, sd)
-})
-
-sd.ratios3 <- lapply(list(sds.um, sds.mwor_cbps, sds.mwr_cbps), function(mat){
-    apply(mat, 2, function(col){
-        col[2] / col[1]
-    })
-})
-
-sd.table3 <- round(data.frame(
-    unmatched=sd.ratios3[[1]],
-    MWOR=sd.ratios3[[2]],
-    MWR=sd.ratios3[[3]]), 2)
-#          unmatched MWOR  MWR
-# bw            0.50 0.59 0.59
-# preterm       0.95 0.75 0.75
-# dayskidh      2.07 0.82 0.82
-# age           0.07 0.06 0.06
-# momage        1.86 1.29 1.29
-#          unmatched MWOR  MWR
-# bw            0.50 0.60 0.60
-# preterm       0.95 0.74 0.74
-# dayskidh      2.07 0.81 0.81
-# age           0.07 0.06 0.06
-# momage        1.86 1.27 1.27
-# income        0.27 0.19 0.19
 
 # genetic matching
 mgen_1 <- readRDS('models/mgen_1.rds')
