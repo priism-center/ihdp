@@ -19,6 +19,12 @@ if (length(args)==0){
 ############################################
 
 library(parallel)
+# Setup cores
+if(Sys.getenv("SLURM_CPUS_PER_TASK") != "") {
+    options(mc.cores=as.integer(Sys.getenv("SLURM_CPUS_PER_TASK")))
+} else {
+  options(mc.cores=parallel::detectCores()-1)
+}
 library(Matching)
 
 ############################################
@@ -33,7 +39,8 @@ bal_form <- update(ps_form, . ~ . - st5 - st9 - st12 - st25 - st36 - st42 - st48
 ############################################
 
 set.seed(20)
-cl <- makePSOCKcluster(detectCores(), type='PSOCK')
+
+cl <- makePSOCKcluster(options('mc.cores')$mc.cores, type='PSOCK')
 
 X <- setdiff(all.vars(ps_form), 'treat')
 X_bal <- setdiff(all.vars(bal_form), 'treat')
