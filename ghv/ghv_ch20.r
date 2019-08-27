@@ -338,7 +338,6 @@ cc2$momageT = (cc2$momage^2)
 
 # New ps-spec from psFitR(21)
 ps_spec2 <- formula(treat ~ bwg*as.factor(educ) + as.factor(ethnic)*b.marr + work.dur + prenatal + preterm + momage + sex + first + bw + dayskidT + pretermT + momageT + black*(bw + preterm + dayskidT) + b.marr*(bw + preterm + dayskidT) + bw*income)
-ps_spec_i21 <- formula(treat ~ preterm +dayskidh +sex +black +hispanic +b.marr +lths +hs +ltcoll +work.dur +prenatal +income +dayskidT +pretermT +momageT +income +black:preterm +black:dayskidT +b.marr:bw +b.marr:preterm +b.marr:dayskidT)
 ps_spec_i21 <- formula(treat~bw+preterm+dayskidh+sex+hispanic+b.marr+lths+hs+ltcoll+work.dur+prenatal+momage+income+bwT+pretermT+income+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT+bw:income)
 ps_spec2 <- ps_spec_i21
 
@@ -444,19 +443,6 @@ sd.table <- round(data.frame(
     unmatched=sd.ratios[[1]],
     MWOR=sd.ratios[[2]],
     MWR=sd.ratios[[3]]), 2)
-#          unmatched MWOR  MWR
-# bw            0.50 0.91 0.52
-# preterm       0.95 0.71 1.12
-# dayskidh      2.07 0.82 3.13
-# age           0.07 0.07 0.08
-# momage        1.86 1.76 1.95
-#          unmatched MWOR  MWR
-# bw            0.50 0.90 0.52
-# preterm       0.95 0.71 1.12
-# dayskidh      2.07 0.82 2.76
-# age           0.07 0.07 0.08
-# momage        1.86 1.76 1.88
-# income        0.27 0.19 0.29
 
 # try with ps_fit_2
 sds.mwor2 <- sapply(cont_vars, function(x){
@@ -478,19 +464,6 @@ sd.table2 <- round(data.frame(
     unmatched=sd.ratios2[[1]],
     MWOR=sd.ratios2[[2]],
     MWR=sd.ratios2[[3]]), 2)
-#          unmatched MWOR  MWR
-# bw            0.50 0.84 0.59
-# preterm       0.95 0.82 1.20
-# dayskidh      2.07 0.88 3.07
-# age           0.07 0.07 0.08
-# momage        1.86 1.63 1.89
-#          unmatched MWOR  MWR
-# bw            0.50 0.85 0.56
-# preterm       0.95 0.82 1.08
-# dayskidh      2.07 0.88 2.82
-# age           0.07 0.07 0.08
-# momage        1.86 1.64 1.98
-# income        0.27 0.23 0.78
 
 # genetic matching
 mgen_1 <- readRDS('models/mgen_1.rds')
