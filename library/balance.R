@@ -121,21 +121,21 @@ print.balance <- function(x, ..., combined=FALSE, digits= 2)
 ### NEXT NEED TO FIGURE OUT HOW TO REVERSE THE ORDER OF THE COVARIATES
 
 plot.balance <- function(x, longcovnames=NULL, which.covs="mixed",
-  v.axis=TRUE, cex.main=1, cex.vars=1, cex.pts=1,
-  mar=c(4, 3, 5.1, 2), plot=TRUE, x.max = NULL,...)
+    v.axis=TRUE, cex.main=1, cex.vars=1, cex.pts=1,
+    mar=c(4, 3, 5.1, 2), plot=TRUE, x.max = NULL,...)
 {
-# if which.covs = mixed then it plots all as std diffs
-# if which.covs = binary it only plots binary and as abs unstd diffs
-# if which.covs = cont it only plots non-binary and as abs std diffs
-#  
-  #  
+    # if which.covs = mixed then it plots all as std diffs
+    # if which.covs = binary it only plots binary and as abs unstd diffs
+    # if which.covs = cont it only plots non-binary and as abs std diffs
+    #  
+ 
     covnames <- x$covnames
     if(!is.null(x.max)){
         x.range = c(0,x.max)
     }
     # if(which.covs=="binary") {
-    #    cat("condition satisfied \n")
-    #  }
+    #   cat("condition satisfied \n")
+    # }
 
     # if plotting all, then use the standardized diff for all
     if(which.covs == "mixed"){
@@ -190,6 +190,7 @@ plot.balance <- function(x, longcovnames=NULL, which.covs="mixed",
         # plot the estimates
         if(is.null(x.max)){
             plot(c(pts,pts2), c(idx,idx),
+                xlim=c(0, max(c(pts,pts2))),
                 bty="n", xlab="", ylab="",
                 xaxt="n", yaxt="n", type="n",
                 main=main, cex.main=cex.main)
