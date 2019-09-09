@@ -17,8 +17,8 @@ load('data/cc2.Rdata')
 
 
 covs.all <- setdiff(names(cc2), c('row.names', 'row.names.1', 'treat', 'treat0', 'ppvtr.36'))
-covs <- c('bw', 'preterm', 'dayskidh', 'sex', 'first', 'age', 'black', 'hispanic', 'white', 'b.marr', 'lths', 'hs', 'ltcoll', 'college', 'work.dur', 'prenatal', 'momage')
-cov_names <- c('birth weight', 'weeks preterm', 'days in hospital', 'male', 'first born', 'age', 'black', 'hispanic', 'white', 'unmarried at birth', 'less than high school', 'high school graduate', 'some college', 'college graduate', 'worked during pregnancy', 'had no prenatal care', 'age at birth')
+covs <- c('bw', 'income', 'preterm', 'dayskidh', 'sex', 'first', 'age', 'bwg', 'black', 'hispanic', 'white', 'b.marr', 'lths', 'hs', 'ltcoll', 'college', 'work.dur', 'prenatal', 'momage')
+cov_names <- c('birth weight', 'income', 'weeks preterm', 'days in hospital', 'male', 'first born', 'age', 'birth weight>2000' 'black', 'hispanic', 'white', 'unmarried at birth', 'less than high school', 'high school graduate', 'some college', 'college graduate', 'worked during pregnancy', 'had no prenatal care', 'age at birth')
 
 # Figure 20.9: See ps_fit_1 MwoR, prior to step 4
 
@@ -71,7 +71,7 @@ round((9.3* 126 + 4.1 * 82 + 7.9* 48 + 4.6* 34) / (126+82+48+34), 1)
 
 # STEP 2: ESTIMATING THE PROPENSITY SCORE
 # these are the no redundancy covariates with and without state covariates
-covs.nr <- c('bwg', 'hispanic', 'black', 'b.marr', 'lths', 'hs', 'ltcoll', 'work.dur', 'prenatal', 'sex', 'first', 'bw', 'preterm', 'momage', 'dayskidh')
+covs.nr <- c('bwg', 'hispanic', 'black', 'b.marr', 'lths', 'hs', 'ltcoll', 'work.dur', 'prenatal', 'sex', 'first', 'bw', 'income', 'preterm', 'momage', 'dayskidh')
 covs.nr.st <- c(covs.nr, 'st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st53')
 
 
@@ -354,11 +354,21 @@ matched2_wr <- cc2[matches2_wr$match.ind,]
 bal_2 <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2$cnts, estimand='ATT')
 bal_2.wr <- balance(rawdata=cc2[,covs], cc2$treat, matched=matches2_wr$cnts, estimand='ATT')
 
+# PS Models MwoR comparison
 par(mfrow=c(2,2))
 plot.balance(bal_nr, which.covs='cont', main='ps_fit_1')
-plot.balance(bal_2.wr, which.covs='cont', main='ps_fit_2')
+plot.balance(bal_2, which.covs='cont', main='ps_fit_2')
 plot.balance(bal_nr, which.covs='binary', main='ps_fit_1')
+plot.balance(bal_2, which.covs='binary', main='ps_fit_2')
+mtext('MwoR: PS Fit 1 vs PS Fit 2', side=3, line=-1.8, outer=TRUE)
+
+# PS Models MwR comparison
+plot.balance(bal_nr.wr, which.covs='cont', main='ps_fit_1')
+plot.balance(bal_2.wr, which.covs='cont', main='ps_fit_2')
+plot.balance(bal_nr.wr, which.covs='binary', main='ps_fit_1')
 plot.balance(bal_2.wr, which.covs='binary', main='ps_fit_2')
+mtext('MwR: PS Fit 1 vs PS Fit 2', side=3, line=-1.8, outer=TRUE)
+
 dev.off()
 
 # new figure
