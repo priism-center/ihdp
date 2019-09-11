@@ -1,0 +1,63 @@
+```{r ps-specs, include=FALSE}
+# covs_nr
+spec1 <- formula(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + income + preterm + momage + dayskidh)
+# covs_nr + state
+spec2 <- update(spec1, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st53)
+# 2nd improved spec from text
+spec3 <- formula(treat~bw+preterm+dayskidh+sex+hispanic+b.marr+lths+hs+ltcoll+work.dur+prenatal+momage+income+bwT+pretermT+income+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT+bw:income)
+spec4 <- update(spec3, . ~ . + + st5 + st9 + st12 + st25 + st36 + st42 + st53)
+
+ps_specs <- list(spec1, spec2, spec3, spec4)
+names(ps_specs) <- c('covs_nr', 'covs_nr_st', 'covsi21', 'covsi21_st')
+```
+
+```{r ps-fit, include=FALSE}
+ps_fits_f <- here('dashboard/inputs/ps_fits.rds')
+
+if (file.exists(ps_fits_f)){
+    ps_fits <- readRDS(ps_fits_f)
+} else {
+    ps_fits <- map(ps_specs, function(spec){
+        set.seed(8)
+        stan_glm(spec, family=binomial(link='logit'), data=ihdp, algorithm='optimizing')
+    })
+    saveRDS(ps_fits, ps_fits_f)
+}
+
+ps_scores <- map(ps_fits, function(psfit){
+    apply(posterior_linpred(psfit, type='link'), 2, mean)
+})
+
+ps_matched <- map(ps_scores, function(pscore){
+    mwor <- matching(z=ihdp$treat, score=pscore, replace=FALSE)
+    mwr <- matching(z=ihdp$treat, score=pscore, replace=TRUE)
+    list(mwor=mwor, mwr=mwr)
+})
+```
+
+```{r, results='asis'}
+pscores <- bind_rows(ps_scores) %>%
+    bind_cols(ihdp) %>%
+    select(id=row.names, treat, starts_with('covs')) %>%
+    gather(model, pscore, -treat, -id) %>%
+    mutate(ps=arm::invlogit(pscore))
+# calculate percent off support
+off_supp <- pscores %>%
+    filter(treat==0) %>%
+    group_by(model) %>%
+        summarise(ps_max=max(ps)) %>%
+    right_join(pscores, by='model') %>%
+    filter(treat==1, ps>ps_max) %>%
+    count(model) %>%
+    mutate(label=paste0(model, ' (Off-support: ', n, ')'))
+off_supp_labs <- off_supp$label
+names(off_supp_labs) <- off_supp$model
+
+bins = 20
+ggplot(pscores) +
+    geom_histogram(aes(ps, y=..density.., fill=factor(treat)), col='black', position='stack', bins=bins) +
+    facet_wrap(vars(model), labeller=labeller(model=off_supp_labs)) +
+    treat_fill +
+    coord_cartesian(ylim=c(0,5)) +
+    labs(x='pscore', caption=paste0('bins=',bins))
+```
