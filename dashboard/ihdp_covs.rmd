@@ -1,5 +1,5 @@
 ```{r, include=FALSE}
-covs_bin <- c('b.marr', 'booze', 'bwg', 'cig', 'first', 'hispanic', 'hs', 'ltcoll', 'lths', 'prenatal', 'sex', 'work.dur')
+covs_bin <- c('b.marr', 'booze', 'bwg', 'cig', 'first', 'hispanic', 'hs', 'income', 'ltcoll', 'lths', 'prenatal', 'sex', 'work.dur')
 covs_cont <- c('age', 'bw', 'dayskidh', 'income', 'momage', 'preterm')
 covs_st <- c('st5', 'st9', 'st12', 'st25', 'st36', 'st42', 'st48', 'st53')
 ```
