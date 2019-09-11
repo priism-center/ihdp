@@ -7,7 +7,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=TRUE)
+knitr::opts_chunk$set(echo=FALSE)
 knitr::opts_chunk$set(include=TRUE)
 knitr::opts_chunk$set(message=FALSE)
 knitr::opts_chunk$set(warning=FALSE)
@@ -35,7 +35,7 @@ theme_set(theme_minimal())
 
 # treat
 treat_vals <- c(`0`='darkgrey', `1`='red4')
-treat_labs <- c(`0`='Control', `1`='Treatment')
+treat_labs <- c(`0`='Control', `1`='Treated')
 treat_col <- scale_color_manual('', values=treat_vals, labels=treat_labs)
 treat_fill <- scale_fill_manual('', values=treat_vals, labels=treat_labs)
 ```
@@ -55,5 +55,5 @@ Covariates
 
 Propensity Score
 =======================================================================
-```{r, child='ihdp_ps.rmd'}
+```{r, child='ihdp_ps2.rmd'}
 ```
