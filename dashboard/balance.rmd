@@ -29,6 +29,34 @@ bals_std.mn <- bals_mwor %>%
             mutate(matching='mwr')
     ) %>%
     gather(cov, std.mn, -matching)
+
+bals_std.max <- bals_mwor %>%
+    map(function(bal){bal$Diff.Un}) %>%
+    bind_cols() %>%
+    summarise_all(max) %>%
+    mutate(matching='mwor') %>%
+    bind_rows(
+        bals_mwr %>%
+            map(function(bal){bal$Diff.Un}) %>%
+            bind_cols() %>%
+            summarise_all(max) %>%
+            mutate(matching='mwr')
+    ) %>%
+    gather(cov, std.max, -matching)
+
+bals_std.over1 <- bals_mwor %>%
+    map(function(bal){bal$Diff.Un}) %>%
+    bind_cols() %>%
+    summarise_all(~sum(ifelse(. > .1, 1, 0))) %>%
+    mutate(matching='mwor') %>%
+    bind_rows(
+        bals_mwr %>%
+            map(function(bal){bal$Diff.Un}) %>%
+            bind_cols() %>%
+            summarise_all(~sum(ifelse(. > .1, 1, 0))) %>%
+            mutate(matching='mwr')
+    ) %>%
+    gather(cov, std.over1, -matching)
 ```
 
 
@@ -37,11 +65,19 @@ Column
 -----------------------------------------------------------------------
 
 
-### Mean of standardized difference in means
-
 ```{r, results='asis', fig.height=8}
 ggplot(bals_std.mn) +
     geom_point(aes(cov, std.mn, col=matching)) +
     match_col +
-    labs(x='')
+    labs(x='', title='Mean of std. mean difference')
+
+ggplot(bals_std.max) +
+    geom_point(aes(cov, std.max, col=matching)) +
+    match_col +
+    labs(x='', title='Max of std. mean difference')
+
+ggplot(bals_std.over1) +
+    geom_point(aes(cov, std.over1, col=matching)) +
+    match_col +
+    labs(x='', title='Num. of std. mean difference > 0.1')
 ```

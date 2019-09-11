@@ -52,36 +52,24 @@ matched_mwr <- map(ps_scores, function(pscore, data=ihdp){
 
 
 
-Column
+Column {data-height=800}
 -----------------------------------------------------------------------
 
 **Propensity Score Specifications:**
 
->$covs_nr
-treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + 
-    work.dur + prenatal + sex + first + bw + income + preterm + 
-    momage + dayskidh
+>covs_nr:
+>treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + income + preterm + momage + dayskidh
 
->$covs_nr_st
-treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + 
-    work.dur + prenatal + sex + first + bw + income + preterm + 
-    momage + dayskidh + st5 + st9 + st12 + st25 + st36 + st42 + 
-    st53
+>covs_nr_st:
+>treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + income + preterm + momage + dayskidh + st5 + st9 + st12 + st25 + st36 + st42 + st53
 
->$covsi21
-treat ~ bw + preterm + dayskidh + sex + hispanic + b.marr + lths + 
-    hs + ltcoll + work.dur + prenatal + momage + income + bwT + 
-    pretermT + income + black:dayskidT + b.marr:bw + b.marr:preterm + 
-    b.marr:dayskidT + bw:income
+>covsi21:
+>treat ~ bw + preterm + dayskidh + sex + hispanic + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + income + bwT + pretermT + income + black:dayskidT + b.marr:bw + b.marr:preterm + b.marr:dayskidT + bw:income
 
->$covsi21_st
-treat ~ bw + preterm + dayskidh + sex + hispanic + b.marr + lths + 
-    hs + ltcoll + work.dur + prenatal + momage + income + bwT + 
-    pretermT + st5 + st9 + st12 + st25 + st36 + st42 + st53 + 
-    black:dayskidT + bw:b.marr + preterm:b.marr + b.marr:dayskidT + 
-    bw:income
+>covsi21_st:
+>treat ~ bw + preterm + dayskidh + sex + hispanic + b.marr + lths + hs + ltcoll + work.dur + prenatal + momage + income + bwT + pretermT + st5 + st9 + st12 + st25 + st36 + st42 + st53 + black:dayskidT + bw:b.marr + preterm:b.marr + b.marr:dayskidT + bw:income
 
-### PScore Overlap: Stacked Histograms
+### PScore Overlap: Stacked Histograms {}
 
 ```{r, results='asis'}
 # take inverse logit to transform pscores into probabilities
@@ -129,10 +117,20 @@ Column {.tabset .tabset-fade}
 
 ```{r, results='asis'}
 overlap_mwor <- map2(matched_mwor, names(matched_mwor), function(df=.x, name=.y, bins=100){
+    off_supp <- df %>%
+        filter(treat==0) %>%
+        summarise(ps_max=max(ps)) %>%
+        mutate(treat=1) %>%
+        right_join(df, by='treat') %>%
+        filter(treat==1, ps>ps_max) %>%
+        count() %>%
+        mutate(label=paste0('Off-support: ', n)) %>%
+        pull(label)
+
     p <- ggplot(df) +
         geom_histogram(aes(ps, fill=factor(treat)), col='black', position='stack', bins=bins) +
         treat_fill +
-        labs(x='pscore', title=paste0('MwoR: ', name))
+        labs(x='pscore', title=paste0('MwoR: ', name), subtitle=off_supp)
 })
 for (p in overlap_mwor){
     print(p)
@@ -144,10 +142,20 @@ for (p in overlap_mwor){
 
 ```{r, results='asis'}
 overlap_mwr <- map2(matched_mwr, names(matched_mwr), function(df=.x, name=.y, bins=100){
+    off_supp <- df %>%
+        filter(treat==0) %>%
+        summarise(ps_max=max(ps)) %>%
+        mutate(treat=1) %>%
+        right_join(df, by='treat') %>%
+        filter(treat==1, ps>ps_max) %>%
+        count() %>%
+        mutate(label=paste0('Off-support: ', n)) %>%
+        pull(label)
+
     p <- ggplot(df) +
         geom_histogram(aes(ps, fill=factor(treat)), col='black', position='stack', bins=bins) +
         treat_fill +
-        labs(x='pscore', title=paste0('MwR: ', name))
+        labs(x='pscore', title=paste0('MwR: ', name), subtitle=off_supp)
 })
 for (p in overlap_mwr){
     print(p)
