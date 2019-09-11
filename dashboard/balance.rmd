@@ -1,0 +1,47 @@
+```{r}
+covs_bal <- c('b.marr', 'booze', 'bwg', 'cig', 'first', 'hispanic', 'hs', 'income', 'ltcoll', 'lths', 'prenatal', 'sex', 'work.dur', 'age', 'bw', 'dayskidh', 'momage', 'preterm')
+
+bals_mwor <- map(matched_mwor, function(df, cov_names=covs_bal){
+    covs <- df[, cov_names]
+    bal_form <- as.formula(paste0('treat ~ ', paste(cov_names, collapse=' + ')))
+    bals <- bal.tab(covs=covs, treat=df$treat, formula=bal_form, estimand='ATT', m.threshold=0.1, v.threshold=0.1, continuous='std', binary='raw')
+    bals$Balance
+})
+
+bals_mwr <- map(matched_mwr, function(df, cov_names=covs_bal){
+    covs <- df[, cov_names]
+    bal_form <- as.formula(paste0('treat ~ ', paste(cov_names, collapse=' + ')))
+    bals <- bal.tab(covs=covs, treat=df$treat, formula=bal_form, estimand='ATT', m.threshold=0.1, v.threshold=0.1, continuous='std', binary='raw')
+    bals$Balance
+})
+
+# mean of the std mean diff
+bals_std.mn <- bals_mwor %>%
+    map(function(bal){bal$Diff.Un}) %>%
+    bind_cols() %>%
+    summarise_all(mean) %>%
+    mutate(matching='mwor') %>%
+    bind_rows(
+        bals_mwr %>%
+            map(function(bal){bal$Diff.Un}) %>%
+            bind_cols() %>%
+            summarise_all(mean) %>%
+            mutate(matching='mwr')
+    ) %>%
+    gather(cov, std.mn, -matching)
+```
+
+
+
+Column
+-----------------------------------------------------------------------
+
+
+### Mean of standardized difference in means
+
+```{r, results='asis', fig.height=8}
+ggplot(bals_std.mn) +
+    geom_point(aes(cov, std.mn, col=matching)) +
+    match_col +
+    labs(x='')
+```

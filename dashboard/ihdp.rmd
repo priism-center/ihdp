@@ -22,38 +22,58 @@ library(plotly)
 library(kableExtra)
 library(cobalt)
 library(rstanarm)
+    options(mc.cores=parallel::detectCores()-1)
 library(survey)
+library(here)
 
-source('library/library.r')
-source('library/matching.R')
-source('library/balance.R')
-source('library/estimation.R')
+source(here('library/library.r'))
+source(here('library/matching.R'))
+source(here('library/balance.R'))
+source(here('library/estimation.R'))
 ```
 
 ```{r plotting, include=FALSE}
 theme_set(theme_minimal())
 
 # treat
-treat_vals <- c(`0`='darkgrey', `1`='red4')
+treat_vals <- c(`0`='slategray', `1`='red3')
 treat_labs <- c(`0`='Control', `1`='Treated')
 treat_col <- scale_color_manual('', values=treat_vals, labels=treat_labs)
 treat_fill <- scale_fill_manual('', values=treat_vals, labels=treat_labs)
+
+# matching
+match_vals <- c('mwor'='dodgerblue', 'mwr'='seagreen')
+match_col <- scale_color_manual('', values=match_vals)
 ```
 
 ```{r data, include=FALSE}
-ihdp <- readRDS('data/ihdp.rds')
+ihdp <- readRDS(here('data/ihdp.rds'))
 ```
 
 
 
 Covariates
 =======================================================================
-```{r, child='ihdp_covs.rmd'}
+```{r, child='covs.rmd'}
 ```
 
 
 
 Propensity Score
 =======================================================================
-```{r, child='ihdp_ps2.rmd'}
+```{r, child='psfit.rmd'}
+```
+
+
+
+Balance
+=======================================================================
+```{r, child='balance.rmd'}
+```
+
+
+
+Treatment Estimation
+=======================================================================
+```{r, child='est.rmd'}
 ```

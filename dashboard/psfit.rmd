@@ -1,0 +1,156 @@
+```{r ps-specs, include=FALSE}
+# covs_nr
+spec1 <- formula(treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + work.dur + prenatal + sex + first + bw + income + preterm + momage + dayskidh)
+# covs_nr + state
+spec2 <- update(spec1, . ~ . + st5 + st9 + st12 + st25 + st36 + st42 + st53)
+# 2nd improved spec from text
+spec3 <- formula(treat~bw+preterm+dayskidh+sex+hispanic+b.marr+lths+hs+ltcoll+work.dur+prenatal+momage+income+bwT+pretermT+income+black:dayskidT+b.marr:bw+b.marr:preterm+b.marr:dayskidT+bw:income)
+spec4 <- update(spec3, . ~ . + + st5 + st9 + st12 + st25 + st36 + st42 + st53)
+
+ps_specs <- list(spec1, spec2, spec3, spec4)
+names(ps_specs) <- c('covs_nr', 'covs_nr_st', 'covsi21', 'covsi21_st')
+```
+
+```{r ps-fit, include=FALSE}
+# Fit propensity score models
+ps_fits_f <- here('dashboard/inputs/ps_fits.rds')
+
+if (file.exists(ps_fits_f)){
+    ps_fits <- readRDS(ps_fits_f)
+} else {
+    ps_fits <- map(ps_specs, function(spec){
+        set.seed(8)
+        stan_glm(spec, family=binomial(link='logit'), data=ihdp, algorithm='optimizing')
+    })
+    saveRDS(ps_fits, ps_fits_f)
+}
+# Predict propensity scores (logit)
+ps_scores <- map(ps_fits, function(psfit){
+    apply(posterior_linpred(psfit, type='link'), 2, mean)
+})
+# Bind pscores to data
+ihdp_ps <- bind_rows(ps_scores) %>%
+    bind_cols(ihdp)
+```
+
+```{r ps-match, include=FALSE}
+# Restructure data (1-1 mwor/mwr)
+matched_mwor <- map(ps_scores, function(pscore, data=ihdp){
+    set.seed(8)
+    matches_mwor <- matching(z=ihdp$treat, score=pscore, replace=FALSE)
+    data$ps <- pscore
+    data[matches_mwor$match.ind,]
+})
+
+matched_mwr <- map(ps_scores, function(pscore, data=ihdp){
+    set.seed(8)
+    matches_mwr <- matching(z=ihdp$treat, score=pscore, replace=TRUE)
+    data$ps <- pscore
+    data[matches_mwr$match.ind,]
+})
+```
+
+
+
+Column
+-----------------------------------------------------------------------
+
+**Propensity Score Specifications:**
+
+>$covs_nr
+treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + 
+    work.dur + prenatal + sex + first + bw + income + preterm + 
+    momage + dayskidh
+
+>$covs_nr_st
+treat ~ bwg + hispanic + black + b.marr + lths + hs + ltcoll + 
+    work.dur + prenatal + sex + first + bw + income + preterm + 
+    momage + dayskidh + st5 + st9 + st12 + st25 + st36 + st42 + 
+    st53
+
+>$covsi21
+treat ~ bw + preterm + dayskidh + sex + hispanic + b.marr + lths + 
+    hs + ltcoll + work.dur + prenatal + momage + income + bwT + 
+    pretermT + income + black:dayskidT + b.marr:bw + b.marr:preterm + 
+    b.marr:dayskidT + bw:income
+
+>$covsi21_st
+treat ~ bw + preterm + dayskidh + sex + hispanic + b.marr + lths + 
+    hs + ltcoll + work.dur + prenatal + momage + income + bwT + 
+    pretermT + st5 + st9 + st12 + st25 + st36 + st42 + st53 + 
+    black:dayskidT + bw:b.marr + preterm:b.marr + b.marr:dayskidT + 
+    bw:income
+
+### PScore Overlap: Stacked Histograms
+
+```{r, results='asis'}
+# take inverse logit to transform pscores into probabilities
+pscores <- ihdp_ps %>%
+    select(id=row.names, treat, starts_with('covs')) %>%
+    gather(model, pscore, -treat, -id) %>%
+    mutate(ps=arm::invlogit(pscore))
+# calculate percent off support
+off_supp <- pscores %>%
+    filter(treat==0) %>%
+    group_by(model) %>%
+        summarise(ps_max=max(ps)) %>%
+    right_join(pscores, by='model') %>%
+    filter(treat==1, ps>ps_max) %>%
+    count(model) %>%
+    mutate(label=paste0(model, ' (Off-support: ', n, ')'))
+off_supp_labs <- off_supp$label
+names(off_supp_labs) <- off_supp$model
+
+bins = 100
+ggplot(pscores) +
+    geom_histogram(aes(ps, y=..density.., fill=factor(treat)), col='black', position='stack', bins=bins) +
+    facet_wrap(vars(model), labeller=labeller(model=off_supp_labs)) +
+    treat_fill +
+    coord_cartesian(ylim=c(0,10)) +
+    labs(x='pscore', title='Unstructured Sample', caption=paste0('bins=',bins)) +
+    theme(legend.position='bottom')
+
+ggplot(pscores) +
+    geom_histogram(aes(ps, fill=factor(treat)), col='black', position='stack', bins=bins) +
+    facet_wrap(vars(model), labeller=labeller(model=off_supp_labs)) +
+    treat_fill +
+    coord_cartesian(ylim=c(0,30)) +
+    labs(x='pscore', title='Unstructured Sample', caption=paste0('bins=',bins)) +
+    theme(legend.position='bottom')
+```
+
+
+
+Column {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+
+### Single Nearest Neighbor Matching without replacement
+
+```{r, results='asis'}
+overlap_mwor <- map2(matched_mwor, names(matched_mwor), function(df=.x, name=.y, bins=100){
+    p <- ggplot(df) +
+        geom_histogram(aes(ps, fill=factor(treat)), col='black', position='stack', bins=bins) +
+        treat_fill +
+        labs(x='pscore', title=paste0('MwoR: ', name))
+})
+for (p in overlap_mwor){
+    print(p)
+}
+```
+
+
+### Single Nearest Neighbor Matching with replacement
+
+```{r, results='asis'}
+overlap_mwr <- map2(matched_mwr, names(matched_mwr), function(df=.x, name=.y, bins=100){
+    p <- ggplot(df) +
+        geom_histogram(aes(ps, fill=factor(treat)), col='black', position='stack', bins=bins) +
+        treat_fill +
+        labs(x='pscore', title=paste0('MwR: ', name))
+})
+for (p in overlap_mwr){
+    print(p)
+}
+```
+

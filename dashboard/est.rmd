@@ -1,0 +1,45 @@
+```{r est-att, include=FALSE}
+att_mwor <- map2(matched_mwor, ps_specs, function(data=.x, ps_spec=.y){
+    set.seed(8)
+    te_spec <- update(ps_spec, ppvtr.36 ~ treat + .)
+    mod <- stan_glm(te_spec, family='gaussian', data=data)
+    ci95 <- posterior_interval(mod, prob=0.95, pars='treat')
+    c('median'=summary(mod)['treat', ][[1]], cil=ci95[[1]], ciu=ci95[[2]])
+})
+
+att_mwr <- map2(matched_mwr, ps_specs, function(data=.x, ps_spec=.y){
+    te_spec <- update(ps_spec, ppvtr.36 ~ treat + .)
+    set.seed(8)
+    mod <- stan_glm(te_spec, family='gaussian', data=data)
+    ci95 <- posterior_interval(mod, prob=0.95, pars='treat')
+    c('median'=summary(mod)['treat', ][[1]], cil=ci95[[1]], ciu=ci95[[2]])
+})
+
+att_mwor_df <- bind_cols(att_mwor) %>%
+    mutate(key=c('est', 'cil', 'ciu')) %>%
+    gather(cov,val, -key) %>%
+    arrange(cov, key) %>%
+    mutate(matching='mwor')
+
+att_mwr_df <- bind_cols(att_mwr) %>%
+    mutate(key=c('est', 'cil', 'ciu')) %>%
+    gather(cov,val, -key) %>%
+    arrange(cov, key) %>%
+    mutate(matching='mwr')
+
+att_df <- bind_rows(att_mwor_df, att_mwr_df) %>%
+    spread(key, val)
+```
+
+
+
+Column
+-----------------------------------------------------------------------
+
+```{r, results='asis', fig.height=8}
+ggplot(att_df) +
+    geom_linerange(aes(x=cov, ymin=cil, ymax=ciu, col=matching), linetype='dashed', position=position_dodge(width=.5)) +
+    geom_point(aes(x=cov, y=est, col=matching), position=position_dodge(width=.5), shape=12, size=3) +
+    match_col +
+    labs(x='', y='effect estimate')
+```
